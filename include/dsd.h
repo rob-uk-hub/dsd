@@ -699,6 +699,7 @@ uint32_t ConvertBitIntoBytes(uint8_t * BufferIn, uint32_t BitLength);
 uint32_t ConvertAsciiToByte(uint8_t AsciiMsbByte, uint8_t AsciiLsbByte, uint8_t * OutputByte);
 void Convert49BitSampleInto7Bytes(char * InputBit, char * OutputByte);
 void Convert7BytesInto49BitSample(char * InputByte, char * OutputBit);
+int strncmperr(const char *s1, const char *s2, size_t size, int MaxErr);
 
 
 /* FEC correction */

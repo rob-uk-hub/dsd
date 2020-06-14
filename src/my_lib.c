@@ -817,5 +817,37 @@ void Convert7BytesInto49BitSample(char * InputByte, char * OutputBit)
 } /* End Convert49BitSampleInto7Byte() */
 
 
+int strncmperr(const char *s1, const char *s2, size_t size, int MaxErr)
+{
+  int Compare = -1;
+  size_t i = 0;
+  int err = 0;
+  int BreakBeforeEnd = 0;
+
+  if(s1 && s2)
+  {
+    for(i = 0; i < size; i++)
+    {
+      if(((s1[i] & 0xFF) != '\0') && ((s2[i] & 0xFF) != '\0'))
+      {
+        if((s1[i] & 0xFF) != (s2[i] & 0xFF)) err++;
+      }
+      else
+      {
+        BreakBeforeEnd = 1;
+        break;
+      }
+    }
+
+    if((err <= MaxErr) && (BreakBeforeEnd == 0))
+    {
+      Compare = 0;
+    }
+  } /* End if(s1 && s2) */
+
+  return Compare;
+} /* End strncmperr() */
+
+
 /* End of file */
 

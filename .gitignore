@@ -3,6 +3,7 @@ dsd
 *.so*
 *.dylib
 build
+bin
 .DS_Store
 .cproject
 .project
