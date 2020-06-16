@@ -253,6 +253,9 @@ void NXDN_SACCH_Full_decode(dsd_opts * opts, dsd_state * state)
           CurrentIV |= state->NxdnSacchFull.NextIVComputed[i];
           CurrentIV = CurrentIV << 8;
         }
+
+        /* Encryption is not supported in the public version,
+         * so do not compute the next IV */
       }
       break;
     } /* End case 0x03: */
@@ -360,12 +363,14 @@ void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message)
   printf("%s - ", NXDN_Call_Type_To_Str(CallType));
 
   /* Print the "Voice Call Option" */
-  //NXDN_Voice_Call_Option_To_Str(VoiceCallOption, DuplexMode, TransmissionMode);
-  //printf("%s %s ", DuplexMode, TransmissionMode);
+  NXDN_Voice_Call_Option_To_Str(VoiceCallOption, DuplexMode, TransmissionMode);
+  printf("%s %s - ", DuplexMode, TransmissionMode);
 
   /* Print the "Cipher Type" */
   if(CipherType != 0) printf("%s - ", NXDN_Cipher_Type_To_Str(CipherType));
-  if(CipherType > 1) printf("Key ID %u - ", KeyID & 0xFF);
+  
+  /* Print the Key ID */
+  if(CipherType != 0) printf("Key ID %u - ", KeyID & 0xFF);
 
   /* Print Source ID and Destination ID (Talk Group or Unit ID) */
   printf("Src=%u - Dst/TG=%u ", SourceUnitID & 0xFFFF, DestinationID & 0xFFFF);

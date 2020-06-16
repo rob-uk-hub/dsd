@@ -57,8 +57,6 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
 //    sacch_raw[nsW[2*i+1]] = 0;
 //  }
 
-
-
   /* Decode the SACCH fields */
   CrcIsGood = NXDN_SACCH_raw_part_decode(sacch_raw, sacch_decoded);
   StructureField = (sacch_decoded[0]<<1 | sacch_decoded[1]<<0) & 0x03; /* Compute the Structure Field (remove 2 first bits of the SR Information in the SACCH) */
@@ -81,12 +79,6 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
   if(CrcIsGood) printf("   (OK)   - ");
   else printf("(CRC ERR) - ");
 
-#ifdef NXDN_DEBUG_AES_ENCRYPTION
-  // TODO : To be removed ABSOLUTELY, only for test
-  NXDN_InitIV(opts, state);
-  NXDN_InitKey(opts, state);
-#endif /* NXDN_DEBUG_AES_ENCRYPTION */
-
   /* Generate the key stream */
   NxdnEncryptionStreamGeneration(opts, state, KeyStream);
 
@@ -102,17 +94,6 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
   if(state->NxdnSacchFull.PartOfNextEncryptedFrame == 1) PartOfEncryptedSuperFrame = 0;
   else if(state->NxdnSacchFull.PartOfNextEncryptedFrame == 2) PartOfEncryptedSuperFrame = 1;
   else PartOfEncryptedSuperFrame = 0;
-
-#ifdef NXDN_DEBUG_AES_ENCRYPTION
-  if(PartOfEncryptedSuperFrame)
-  {
-    printf("Encrypting Second Superframe ");
-  }
-  else
-  {
-    printf("Encrypting First Superframe ");
-  }
-#endif /* NXDN_DEBUG_AES_ENCRYPTION */
 
   /* Decode the SACCH only when all 4 voice frame
    * SACCH spare parts have been received */
@@ -149,13 +130,6 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
       ambe_fr[*w][*x] = *pr ^ (1 & (dibit >> 1)); // bit 1
       pr++;
       ambe_fr[*y][*z] = (1 & dibit);              // bit 0
-
-#ifdef NXDN_DEBUG_AES_ENCRYPTION
-      // TODO : To be removed ABSOLUTELY, only for test
-      dibit = NXDN_TestGetDibit();
-      ambe_fr[*w][*x] = (1 & (dibit >> 1)); // bit 1
-      ambe_fr[*y][*z] = (1 & dibit);        // bit 0
-#endif /* NXDN_DEBUG_AES_ENCRYPTION */
 
       w++;
       x++;
@@ -195,10 +169,5 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
   {
     /* Reset all CRCs of the SACCH */
     for(i = 0; i < 4; i++) state->NxdnSacchRawPart[i].CrcIsGood = 0;
-
-#ifdef NXDN_DEBUG_AES_ENCRYPTION
-    // TODO : To be removed ABSOLUTELY, only for test
-    NXDN_SetNextSuperFrameToDecode(opts, state, PartOfEncryptedSuperFrame);
-#endif /* NXDN_DEBUG_AES_ENCRYPTION */
   }
 } /* End processNXDNVoice() */
