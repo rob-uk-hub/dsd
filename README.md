@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/szechyjs/dsd.svg?branch=master)](https://travis-ci.org/szechyjs/dsd)
+[![Build Status](https://travis-ci.org/LouisErigHerve/dsd.svg?branch=master)](https://travis-ci.org/LouisErigHerve/dsd)
 
 # Digital Speech Decoder 1.8.2-dev
 This version of DSD is a fork of existing source code available [here](https://github.com/szechyjs/dsd). It has been modified to integrate some additionnal functionnalities like dPMR decoding.
