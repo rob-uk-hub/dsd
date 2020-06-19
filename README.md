@@ -1,9 +1,13 @@
 [![Build Status](https://travis-ci.org/szechyjs/dsd.svg?branch=master)](https://travis-ci.org/szechyjs/dsd)
 
-# Digital Speech Decoder 1.7.0-dev
+# Digital Speech Decoder 1.8.2-dev
+This version of DSD is a fork of existing source code available [here](https://github.com/szechyjs/dsd). It has been modified to integrate some additionnal functionnalities like dPMR decoding.
+
 DSD is able to decode [several digital voice formats](https://github.com/szechyjs/dsd/wiki/Supported-formats) from discriminator
 tap audio and synthesize  the decoded speech.  Speech
 synthesis requires mbelib, which is a separate package.
+
+At this point of the project many links refer to the old GitHub repository, the Wiki of this project will gradually grow and links will be modified in the future. Please be patient.
 
 
 ## Information
