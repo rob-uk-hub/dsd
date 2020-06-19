@@ -3,11 +3,8 @@
 # Digital Speech Decoder 1.8.2-dev
 This version of DSD is a fork of existing source code available [here](https://github.com/szechyjs/dsd). It has been modified to integrate some additionnal functionnalities like dPMR decoding.
 
-DSD is able to decode [several digital voice formats](https://github.com/szechyjs/dsd/wiki/Supported-formats) from discriminator
-tap audio and synthesize  the decoded speech.  Speech
-synthesis requires mbelib, which is a separate package.
-
-At this point of the project many links refer to the old GitHub repository, the Wiki of this project will gradually grow and links will be modified in the future. Please be patient.
+DSD is able to decode [several digital voice formats](https://github.com/LouisErigHerve/dsd/wiki/Supported-formats) from discriminator
+tap audio and synthesize  the decoded speech.  Speech synthesis requires mbelib, which is a separate package.
 
 
 ## Information
@@ -17,24 +14,24 @@ The DSD Wiki has lots of additional information about DSD including build
 instructions and answers to the most frequently asked questions.
 Please browse the Wiki after finishing this README.
 
-[https://github.com/szechyjs/dsd/wiki](https://github.com/szechyjs/dsd/wiki)
+[https://github.com/LouisErigHerve/dsd/wiki](https://github.com/LouisErigHerve/dsd/wiki)
 
 ### Bug reports
 If you discover a problem with DSD, we would like to know about it.
 However, we ask that you please review these guidelines before submitting a
 bug report:
 
-[https://github.com/szechyjs/dsd/wiki/Bug-reports](https://github.com/szechyjs/dsd/wiki/Bug-reports)
+[https://github.com/LouisErigHerve/dsd/wiki/Bug-reports](https://github.com/LouisErigHerve/dsd/wiki/Bug-reports)
 
 Please don't contact developers directly through email or other channels.
 We ask that you follow the guidelines above and use the
-[Issue Tracker](http://github.com/szechyjs/dsd/issues).
+[Issue Tracker](http://github.com/LouisErigHerve/dsd/issues).
 
 ### Contributing
 We hope that you will consider contributing to DSD. Please read this short
 overview for some information about how to get started.
 
-[https://github.com/szechyjs/dsd/wiki/Contributing](https://github.com/szechyjs/dsd/wiki/Contributing)
+[https://github.com/LouisErigHerve/dsd/wiki/Contributing](https://github.com/LouisErigHerve/dsd/wiki/Contributing)
 
 You will usually want to write tests for your changes. To run the test suite
 run `make test` from your build directory.
