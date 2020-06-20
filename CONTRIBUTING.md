@@ -10,8 +10,8 @@ Issues include:
  - Help
  - Build errors
 
-[Reporting Guidelines](https://github.com/szechyjs/dsd/wiki/Bug-reports)
+[Reporting Guidelines](https://github.com/LouisErigHerve/dsd/wiki/Bug-reports)
 
 ### Code Contributions
 
-[Contributing Guidelines](https://github.com/szechyjs/dsd/wiki/Contributing)
+[Contributing Guidelines](https://github.com/LouisErigHerve/dsd/wiki/Contributing)
