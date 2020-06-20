@@ -9,7 +9,7 @@ compiler:
 addons:
   apt:
     sources:
-      - sourceline: 'ppa:LouisErigHerve/dsd'
+      - sourceline: 'ppa:szechyjs/dsd'
     packages:
       - libmbe-dev
       - libsndfile1-dev
