@@ -1128,14 +1128,14 @@ void QR_16_7_6_init()
 
     memset(QR_16_7_6_m_corr, 0xFF, 2*512);
 
-    for (int i1 = 0; i1 < 7; i1++)
+    for (i1 = 0; i1 < 7; i1++)
     {
-        for (int i2 = i1+1; i2 < 7; i2++)
+        for (i2 = i1+1; i2 < 7; i2++)
         {
             // 2 bit patterns
             syndromeI = 0;
 
-            for (int ir = 0; ir < 9; ir++)
+            for (ir = 0; ir < 9; ir++)
             {
                 syndromeI += ((QR_16_7_6_m_H[16*ir + i1] +  QR_16_7_6_m_H[16*ir + i2]) % 2) << (8-ir);
             }
