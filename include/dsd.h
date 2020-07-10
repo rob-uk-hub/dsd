@@ -228,6 +228,17 @@ typedef struct __attribute__((packed, aligned(1)))
 
 typedef struct
 {
+  uint8_t RFChannelType;
+  uint8_t FunctionnalChannelType;
+  uint8_t Option;
+  uint8_t Direction;
+  uint8_t CompleteLich; /* 7 bits of LICH without parity */
+  uint8_t PreviousCompleteLich; /* 7 bits of previous LICH without parity */
+} NxdnLich_t;
+
+
+typedef struct
+{
   uint8_t StructureField;
   uint8_t RAN;
   uint8_t Data[18];
@@ -478,6 +489,7 @@ typedef struct
 
   NxdnSacchRawPart_t NxdnSacchRawPart[4];
   NxdnSacchFull_t NxdnSacchFull;
+  NxdnLich_t NxdnLich;
 
   int printNXDNAmbeVoiceSampleHex;
 } dsd_state;
@@ -521,14 +533,57 @@ typedef struct
 #define NXDN_SYNC3                "3313113331"  // TODO : Only for test
 #define INV_NXDN_SYNC3            "1131331113"  // TODO : Only for test
 
+
+/* DMR Frame Sync Pattern - Base Station Sourced - Data
+ * HEX    :    D    F    F    5    7    D    7    5    D    F    5    D
+ * Binary : 1101 1111 1111 0101 0111 1101 0111 0101 1101 1111 0101 1101
+ * Dibit  :  3 1  3 3  3 3  1 1  1 3  3 1  1 3  1 1  3 1  3 3  1 1  3 1 */
 #define DMR_BS_DATA_SYNC  "313333111331131131331131"
+
+/* DMR Frame Sync Pattern - Base Station Sourced - Voice
+ * HEX    :    7    5    5    F    D    7    D    F    7    5    F    7
+ * Binary : 0111 0101 0101 1111 1101 0111 1101 1111 0111 0101 1111 0111
+ * Dibit  :  1 3  1 1  1 1  3 3  3 1  1 3  3 1  3 3  1 3  1 1  3 3  1 3 */
 #define DMR_BS_VOICE_SYNC "131111333113313313113313"
+
+/* DMR Frame Sync Pattern - Mobile Station Sourced - Data
+ * HEX    :    D    5    D    7    F    7    7    F    D    7    5    7
+ * Binary : 1101 0101 1101 0111 1111 0111 0111 1111 1101 0111 0101 0111
+ * Dibit  :  3 1  1 1  3 1  1 3  3 3  1 3  1 3  3 3  3 1  1 3  1 1  1 3 */
 #define DMR_MS_DATA_SYNC  "311131133313133331131113"
+
+/* DMR Frame Sync Pattern - Mobile Station Sourced - Voice
+ * HEX    :    7    F    7    D    5    D    D    5    7    D    F    D
+ * Binary : 0111 1111 0111 1101 0101 1101 1101 0101 0111 1101 1111 1101
+ * Dibit  :  1 3  3 3  1 3  3 1  1 1  3 1  3 1  1 1  1 3  3 1  3 3  3 1 */
 #define DMR_MS_VOICE_SYNC "133313311131311113313331"
+
+/* DMR Frame Sync Pattern - TDMA direct mode time slot 1 - Data
+ * HEX    :    F    7    F    D    D    5    D    D    F    D    5    5
+ * Binary : 1111 0111 1111 1101 1101 0101 1101 1101 1111 1101 0101 0101
+ * Dibit  :  3 3  1 3  3 3  3 1  3 1  1 1  3 1  3 1  3 3  3 1  1 1  1 1 */
 #define DMR_DIRECT_MODE_TS1_DATA_SYNC  "331333313111313133311111"
-#define DMR_DIRECT_MODE_TS1_VOICE_SYNC "113111131333131311333333"
+
+/* DMR Frame Sync Pattern - TDMA direct mode time slot 1 - Voice
+ * HEX    :    5    D    5    7    7    F    7    7    5    7    F    F
+ * Binary : 0101 1101 0101 0111 0111 1111 0111 0111 0101 0111 1111 1111
+ * Dibit  :  1 1  3 1  1 1  1 3  1 3  3 3  1 3  1 3  1 1  1 3  3 3  3 3 */
+#define DMR_DIRECT_MODE_TS1_VOICE_SYNC "113111131333131311133333"
+
+/* DMR Frame Sync Pattern - TDMA direct mode time slot 2 - Data
+ * HEX    :    D    7    5    5    7    F    5    F    F    7    F    5
+ * Binary : 1101 0111 0101 0101 0111 1111 0101 1111 1111 0111 1111 0101
+ * Dibit  :  3 1  1 3  1 1  1 1  1 3  3 3  1 1  3 3  3 3  1 3  3 3  1 1 */
 #define DMR_DIRECT_MODE_TS2_DATA_SYNC  "311311111333113333133311"
+
+/* DMR Frame Sync Pattern - TDMA direct mode time slot 2 - Voice
+ * HEX    :    7    D    F    F    D    5    F    5    5    D    5    F
+ * Binary : 0111 1101 1111 1111 1101 0101 1111 0101 0101 1101 0101 1111
+ * Dibit  :  1 3  3 1  3 3  3 3  3 1  1 1  3 3  1 1  1 1  3 1  1 1  3 3 */
 #define DMR_DIRECT_MODE_TS2_VOICE_SYNC "133133333111331111311133"
+
+
+
 
 #define INV_PROVOICE_SYNC    "31313111333133133311331133113311"
 #define PROVOICE_SYNC        "13131333111311311133113311331133"
@@ -564,6 +619,8 @@ typedef struct
 #define INV_DPMR_FRAME_SYNC_2 "331111313113"
 #define INV_DPMR_FRAME_SYNC_3 "311313111133"
 #define INV_DPMR_FRAME_SYNC_4 "111333331133131131111313"
+
+
 
 
 /* Sample per symbol constants */
@@ -672,11 +729,28 @@ void ConvertAirInterfaceID(uint32_t AI_ID, uint8_t ID[8]);
 int32_t GetdPmrColorCode(uint8_t ChannelCodeBit[24]);
 
 
+
+/* NXDN frame decoding functions */
+void ProcessNXDNFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted);
+void ProcessNxdnRCCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted);
+void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted);
+void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted);
+void ProcessNxdnRTCH_C_Frame(dsd_opts * opts, dsd_state * state, uint8_t Inverted);
+void ProcessNXDNIdleData (dsd_opts * opts, dsd_state * state);
+
+
 /* NXDN functions */
 void CNXDNConvolution_start(void);
 void CNXDNConvolution_decode(uint8_t s0, uint8_t s1);
 void CNXDNConvolution_chainback(unsigned char* out, unsigned int nBits);
 void CNXDNConvolution_encode(const unsigned char* in, unsigned char* out, unsigned int nBits);
+uint8_t NXDN_decode_LICH(uint8_t   InputLich[8],
+                         uint8_t * RFChannelType,
+                         uint8_t * FunctionnalChannelType,
+                         uint8_t * Option,
+                         uint8_t * Direction,
+                         uint8_t * CompleteLichBinaryFormat,
+                         uint8_t   Inverted);
 uint8_t NXDN_SACCH_raw_part_decode(uint8_t * Input, uint8_t * Output);
 void NXDN_SACCH_Full_decode(dsd_opts * opts, dsd_state * state);
 void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message);

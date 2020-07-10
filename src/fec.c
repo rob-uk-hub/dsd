@@ -587,7 +587,9 @@ bool Hamming_13_9_decode(unsigned char *rxBits, unsigned char *decodedBits, int 
   for (ic = 0; ic < nbCodewords; ic++)
   {
     // calculate syndrome
+
     syndromeI = 0; // syndrome index
+
     for (is = 0; is < 4; is++)
     {
       syndromeI += (((rxBits[13*ic +  0] * Hamming_13_9_m_H[13*is +  0])
@@ -679,7 +681,9 @@ bool Hamming_15_11_decode(unsigned char *rxBits, unsigned char *decodedBits, int
     for (ic = 0; ic < nbCodewords; ic++)
     {
         // calculate syndrome
+
         syndromeI = 0; // syndrome index
+
         for (is = 0; is < 4; is++)
         {
             syndromeI += (((rxBits[15*ic +  0] * Hamming_15_11_m_H[15*is +  0])
@@ -1002,7 +1006,7 @@ void Golay_24_12_init()
             for (i3 = i2+1; i3 < 12; i3++)
             {
                 // 3 bit patterns
-                syndromeI = 0; // syndrome index
+                syndromeI = 0;
 
                 for (ir = 0; ir < 12; ir++)
                 {

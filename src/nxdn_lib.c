@@ -22,6 +22,121 @@
 
 
 /*
+ * @brief : This function decodes the LICH
+ *
+ * @param InputLich : A 8 ASCII bytes buffer
+ *
+ * @param RFChannelType : Output of RF Channel Type
+ *        parameter
+ *
+ * @param FunctionnalChannelType : Output of Functional
+ *        Channel Type parameter
+ *
+ * @param Option : Output of Option parameter
+ *
+ * @param : CompleteLichBinaryFormat : The constitued LICH (7 bits)
+ *
+ * @param Direction : Output of Direction parameter
+ *
+ * @param Inverted : 1 = Inverted frame ; 0 = Normal frame
+ *
+ * @return 1 when LICH parity is good
+ *         0 when LICH parity is bad
+ *
+ */
+uint8_t NXDN_decode_LICH(uint8_t   InputLich[8],
+                         uint8_t * RFChannelType,
+                         uint8_t * FunctionnalChannelType,
+                         uint8_t * Option,
+                         uint8_t * Direction,
+                         uint8_t * CompleteLichBinaryFormat,
+                         uint8_t   Inverted)
+{
+  uint8_t  GoodParity = 0;
+  uint32_t i;
+  uint8_t  LichDibits[8] = {0};
+  uint8_t  LichBits[8] = {0};
+  uint8_t  EvenParityComputed = 0;
+  uint8_t *pr;
+  uint8_t  dibit;
+  uint8_t  InvertionDibitValue;
+  uint8_t  CompleteLich = 0;
+
+  if(Inverted) InvertionDibitValue = 0x02;
+  else InvertionDibitValue = 0x00;
+
+  pr = (uint8_t *)(&nxdnpr[0]);
+
+  /* Recreate a 8 bits field
+   * 7 bits of LICH + 1 parity bit */
+  for(i = 0; i < 8; i++)
+  {
+    /* Get the dibit value (convert ASCII to bin value) */
+    dibit = ((InputLich[i] - '0') & 0x03) ^ InvertionDibitValue;
+
+    /* Descramble the dibit */
+    LichDibits[i] = dibit ^ ((*pr & 0x01) << 1);
+
+    /* Increment pseudo-random pointer */
+    pr++;
+
+    /* Decode LICH dibit */
+    switch(LichDibits[i])
+    {
+      case 0:
+      {
+        LichBits[i] = 0;
+        break;
+      }
+      case 1:
+      {
+        LichBits[i] = 0;
+        break;
+      }
+      case 2:
+      {
+        LichBits[i] = 1;
+        break;
+      }
+      default:
+      {
+        LichBits[i] = 1;
+        break;
+      }
+    } /* End switch(LichDibits[i]) */
+
+    /* Parity should be even */
+    EvenParityComputed += LichBits[i];
+
+  } /* End for(i = 0; i < 8; i++) */
+
+  /* Even parity = Good */
+  if((EvenParityComputed % 2) == 0)
+  {
+    GoodParity = 1;
+  }
+  else
+  {
+    /* Odd parity = Wrong */
+  }
+
+  *RFChannelType = ((LichBits[0] & 0x01) << 1) | (LichBits[1] & 0x01);
+  *FunctionnalChannelType = ((LichBits[2] & 0x01) << 1) | (LichBits[3] & 0x01);
+  *Option        = ((LichBits[4] & 0x01) << 1) | (LichBits[5] & 0x01);
+  *Direction     = LichBits[6] & 0x01;
+
+  CompleteLich = 0;
+  for(i = 0; i < 7; i++)
+  {
+    CompleteLich = ((CompleteLich << 1) | LichBits[i]) & 0x7F;
+  }
+  *CompleteLichBinaryFormat = CompleteLich;
+
+  return GoodParity;
+} /* End NXDN_decode_LICH() */
+
+
+/*
  * @brief : This function decodes the RAW part of SACCH received when
  *          each voice frame starts.
  *          This is NOT the full SACCH but only 18 bits on 72.

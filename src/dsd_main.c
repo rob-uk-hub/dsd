@@ -99,6 +99,9 @@ void noCarrier (dsd_opts * opts, dsd_state * state)
   // TODO : Is it really necessary ???
   memset(&state->NxdnSacchFull, 0, sizeof(state->NxdnSacchFull));
 
+  /* Re-init the LICH structure content */
+  memset(&state->NxdnLich, 0, sizeof(state->NxdnLich));
+
 } /* End noCarrier() */
 
 
@@ -307,6 +310,7 @@ void initState (dsd_state * state)
 
   memset(state->NxdnSacchRawPart, 0, sizeof(state->NxdnSacchRawPart));
   memset(&state->NxdnSacchFull, 0, sizeof(state->NxdnSacchFull));
+  memset(&state->NxdnLich, 0, sizeof(state->NxdnLich));
 
 } /* End initState() */
 

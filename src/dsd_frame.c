@@ -107,6 +107,8 @@ void processFrame (dsd_opts * opts, dsd_state * state)
    * 25 = -dPMR Frame Sync 2
    * 26 = -dPMR Frame Sync 3
    * 27 = -dPMR Frame Sync 4
+   * 28 = +NXDN (Frame Sync Word detected only)
+   * 29 = -NXDN (Frame Sync Word detected only)
    */
   if ((state->synctype == 8) || (state->synctype == 9))
   {
@@ -129,6 +131,46 @@ void processFrame (dsd_opts * opts, dsd_state * state)
     }
     sprintf (state->fsubtype, " VOICE        ");
     processNXDNVoice (opts, state);
+    return;
+  }
+  else if((state->synctype == 28))  // +NXDN - Frame Sync Word only
+  {
+    state->rf_mod = GFSK_MODE;
+    state->nac = 0;
+    state->lastsrc = 0;
+    state->lasttg = 0;
+    if (opts->errorbars == 1)
+    {
+      if (opts->verbose > 0)
+      {
+        level = (int) state->max / 164;
+        printf ("inlvl: %2i%% ", level);
+      }
+    }
+
+    //printf("NXDN Sync only\n");
+
+    ProcessNXDNFrame (opts, state, 0);
+    return;
+  }
+  else if((state->synctype == 29))  // -NXDN - Frame Sync Word only
+  {
+    state->rf_mod = GFSK_MODE;
+    state->nac = 0;
+    state->lastsrc = 0;
+    state->lasttg = 0;
+    if (opts->errorbars == 1)
+    {
+      if (opts->verbose > 0)
+      {
+        level = (int) state->max / 164;
+        printf ("inlvl: %2i%% ", level);
+      }
+    }
+
+    //printf("NXDN Sync only\n");
+
+    ProcessNXDNFrame (opts, state, 1);
     return;
   }
   else if ((state->synctype == 16) || (state->synctype == 17))

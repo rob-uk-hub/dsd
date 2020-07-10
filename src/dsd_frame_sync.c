@@ -17,6 +17,10 @@
 
 #include "dsd.h"
 
+
+#define LBUF_SIZE   24
+
+
 void printFrameSync (dsd_opts * opts, dsd_state * state, char *frametype, int offset, char *modulation)
 {
   if (opts->verbose > 0)
@@ -74,6 +78,8 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
    * 25 = -dPMR Frame Sync 2
    * 26 = -dPMR Frame Sync 3
    * 27 = -dPMR Frame Sync 4
+   * 28 = +NXDN (sync only)
+   * 29 = -NXDN (sync only)
    */
 
 
@@ -86,11 +92,12 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
   char *synctest_p;
   char synctest_buf[10240];
   int lmin, lmax, lidx;
-  int lbuf1[24], lbuf2[24];
+  int lbuf1[LBUF_SIZE], lbuf2[LBUF_SIZE];
   int lsum;
   char spectrum[64];
+  char NXDN_LICH_Parity_Is_Correct = 0;
 
-  for (i = 18; i < 24; i++)
+  for (i = 18; i < LBUF_SIZE; i++)
   {
     lbuf1[i] = 0;
     lbuf2[i] = 0;
@@ -121,7 +128,7 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
 
     lbuf1[lidx] = symbol;
     state->sbuf[state->sidx] = symbol;
-    if (lidx == 23)
+    if (lidx == (LBUF_SIZE - 1))
     {
       lidx = 0;
     }
@@ -191,11 +198,11 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
     *synctest_p = dibit;
     if (t >= 12)
     {
-      for (i = 0; i < 24; i++)
+      for (i = 0; i < LBUF_SIZE; i++)
       {
         lbuf2[i] = lbuf1[i];
       }
-      qsort (lbuf2, 24, sizeof (int), comp);
+      qsort (lbuf2, LBUF_SIZE, sizeof (int), comp);
       // min/max calculation
       lmin = (lbuf2[2] + lbuf2[3] + lbuf2[4]) / 3;
       lmax = (lbuf2[21] + lbuf2[20] + lbuf2[19]) / 3;
@@ -670,139 +677,250 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
       {
         strncpy (synctest18, (synctest_p - 17), 18);
 
-        if ((strncmperr (synctest18, NXDN_BS_VOICE_SYNC, 18, 1) == 0) || (strncmperr (synctest18, NXDN_MS_VOICE_SYNC, 18, 1) == 0))
+        if (strncmperr (synctest18, NXDN_SYNC, 10, 1) == 0)
         {
-          if ((state->lastsynctype == 8) || (state->lastsynctype == 16))
+          /* Save previous LICH */
+          state->NxdnLich.PreviousCompleteLich = state->NxdnLich.CompleteLich;
+
+          /* Process LICH */
+          NXDN_LICH_Parity_Is_Correct = (char)NXDN_decode_LICH((uint8_t*)&synctest18[10],
+                                                               (uint8_t*)&state->NxdnLich.RFChannelType,
+                                                               (uint8_t*)&state->NxdnLich.FunctionnalChannelType,
+                                                               (uint8_t*)&state->NxdnLich.Option,
+                                                               (uint8_t*)&state->NxdnLich.Direction,
+                                                               (uint8_t*)&state->NxdnLich.CompleteLich,
+                                                               0);
+
+//          printf("LITCH Parity=%d %s ; RF Channel Type=%u%u ; Functional Channel Type=%u%u ; Option=%u%u ; Direction=%u %s\n",
+//                 NXDN_LICH_Parity_Is_Correct,
+//                 (NXDN_LICH_Parity_Is_Correct ? "(OK) " : "(ERR)"),
+//                 (state->NxdnLich.RFChannelType >> 1) & 0x01,
+//                 state->NxdnLich.RFChannelType & 0x01,
+//                 (state->NxdnLich.FunctionnalChannelType >> 1) & 0x01,
+//                 state->NxdnLich.FunctionnalChannelType & 0x01,
+//                 (state->NxdnLich.Option >> 1) & 0x01,
+//                 state->NxdnLich.Option & 0x01,
+//                 state->NxdnLich.Direction,
+//                 (state->NxdnLich.Direction ? "(Outbound)" : "(Inbound) "));
+
+          if(NXDN_LICH_Parity_Is_Correct)// || (state->NxdnLich.PreviousCompleteLich == state->NxdnLich.CompleteLich))
           {
-            state->carrier = 1;
-            state->offset = synctest_pos;
-            state->max = ((state->max) + lmax) / 2;
-            state->min = ((state->min) + lmin) / 2;
-            if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
+            if ((state->lastsynctype == 8) || (state->lastsynctype == 16) || (state->lastsynctype == 28))
             {
-              sprintf (state->ftype, " NXDN48      ");
-              if (opts->errorbars == 1)
+              state->carrier = 1;
+              state->offset = synctest_pos;
+              state->max = ((state->max) + lmax) / 2;
+              state->min = ((state->min) + lmin) / 2;
+              if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
               {
-                printFrameSync (opts, state, " +NXDN48   ", synctest_pos + 1, modulation);
+                sprintf (state->ftype, " NXDN48      ");
+                if (opts->errorbars == 1)
+                {
+                  printFrameSync (opts, state, " +NXDN48   ", synctest_pos + 1, modulation);
+                }
               }
+              else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
+              {
+                sprintf (state->ftype, " NXDN96      ");
+                if (opts->errorbars == 1)
+                {
+                  printFrameSync (opts, state, " +NXDN96   ", synctest_pos + 1, modulation);
+                }
+              }
+              state->lastsynctype = 28;
+              return (28);
             }
-            else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
+            else
             {
-              sprintf (state->ftype, " NXDN96      ");
-              if (opts->errorbars == 1)
-              {
-                printFrameSync (opts, state, " +NXDN96   ", synctest_pos + 1, modulation);
-              }
+              state->lastsynctype = 28;
             }
-            state->lastsynctype = 8;
-            return (8);
-          }
-          else
-          {
-            state->lastsynctype = 8;
-          }
-        }
-        else if ((strncmperr (synctest18, INV_NXDN_BS_VOICE_SYNC, 18, 1) == 0) || (strncmperr (synctest18, INV_NXDN_MS_VOICE_SYNC, 18, 1) == 0))
+          } /* End if(NXDN_LICH_Parity_Is_Correct || (state->NxdnLich.PreviousCompleteLich == state->NxdnLich.CompleteLich)) */
+        } /* End if (strncmperr (synctest18, NXDN_SYNC, 10, 1) == 0) */
+        else if (strncmperr (synctest18, INV_NXDN_SYNC, 10, 1) == 0)
         {
-          if ((state->lastsynctype == 9) || (state->lastsynctype == 17))
+          /* Save previous LICH */
+          state->NxdnLich.PreviousCompleteLich = state->NxdnLich.CompleteLich;
+
+          /* Process LICH */
+          NXDN_LICH_Parity_Is_Correct = (char)NXDN_decode_LICH((uint8_t*)&synctest18[10],
+                                                               (uint8_t*)&state->NxdnLich.RFChannelType,
+                                                               (uint8_t*)&state->NxdnLich.FunctionnalChannelType,
+                                                               (uint8_t*)&state->NxdnLich.Option,
+                                                               (uint8_t*)&state->NxdnLich.Direction,
+                                                               (uint8_t*)&state->NxdnLich.CompleteLich,
+                                                               1);
+
+          if(NXDN_LICH_Parity_Is_Correct)// || (state->NxdnLich.PreviousCompleteLich == state->NxdnLich.CompleteLich))
           {
-            state->carrier = 1;
-            state->offset = synctest_pos;
-            state->max = ((state->max) + lmax) / 2;
-            state->min = ((state->min) + lmin) / 2;
-            if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
+            if ((state->lastsynctype == 9) || (state->lastsynctype == 17) || (state->lastsynctype == 29))
             {
-              sprintf (state->ftype, " NXDN48      ");
-              if (opts->errorbars == 1)
+              state->carrier = 1;
+              state->offset = synctest_pos;
+              state->max = ((state->max) + lmax) / 2;
+              state->min = ((state->min) + lmin) / 2;
+              if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
               {
-                printFrameSync (opts, state, " -NXDN48   ", synctest_pos + 1, modulation);
+                sprintf (state->ftype, " NXDN48      ");
+                if (opts->errorbars == 1)
+                {
+                  printFrameSync (opts, state, " -NXDN48   ", synctest_pos + 1, modulation);
+                }
               }
+              else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
+              {
+                sprintf (state->ftype, " NXDN96      ");
+                if (opts->errorbars == 1)
+                {
+                  printFrameSync (opts, state, " -NXDN96   ", synctest_pos + 1, modulation);
+                }
+              }
+              state->lastsynctype = 29;
+              return (29);
             }
-            else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
+            else
             {
-              sprintf (state->ftype, " NXDN96      ");
-              if (opts->errorbars == 1)
-              {
-                printFrameSync (opts, state, " -NXDN96   ", synctest_pos + 1, modulation);
-              }
+              state->lastsynctype = 29;
             }
-            state->lastsynctype = 9;
-            return (9);
-          }
-          else
-          {
-            state->lastsynctype = 9;
-          }
-        }
-        else if ((strncmperr (synctest18, NXDN_BS_DATA_SYNC, 18, 1) == 0) || (strncmperr (synctest18, NXDN_MS_DATA_SYNC, 18, 1) == 0))
-        {
-          if ((state->lastsynctype == 8) || (state->lastsynctype == 16))
-          {
-            state->carrier = 1;
-            state->offset = synctest_pos;
-            state->max = ((state->max) + lmax) / 2;
-            state->min = ((state->min) + lmin) / 2;
-            if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
-            {
-              sprintf (state->ftype, " NXDN48      ");
-              if (opts->errorbars == 1)
-              {
-                printFrameSync (opts, state, " +NXDN48   ", synctest_pos + 1, modulation);
-              }
-            }
-            else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
-            {
-              sprintf (state->ftype, " NXDN96      ");
-              if (opts->errorbars == 1)
-              {
-                printFrameSync (opts, state, " +NXDN96   ", synctest_pos + 1, modulation);
-              }
-            }
-            state->lastsynctype = 16;
-            return (16);
-          }
-          else
-          {
-            state->lastsynctype = 16;
-          }
-        }
-        else if ((strncmperr (synctest18, INV_NXDN_BS_DATA_SYNC, 18, 1) == 0) || (strncmperr (synctest18, INV_NXDN_MS_DATA_SYNC, 18, 1) == 0))
-        {
-          if ((state->lastsynctype == 9) || (state->lastsynctype == 17))
-          {
-            state->carrier = 1;
-            state->offset = synctest_pos;
-            state->max = ((state->max) + lmax) / 2;
-            state->min = ((state->min) + lmin) / 2;
-            sprintf (state->ftype, " NXDN        ");
-            if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
-            {
-              sprintf (state->ftype, " NXDN48      ");
-              if (opts->errorbars == 1)
-              {
-                printFrameSync (opts, state, " -NXDN48   ", synctest_pos + 1, modulation);
-              }
-            }
-            else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
-            {
-              sprintf (state->ftype, " NXDN96      ");
-              if (opts->errorbars == 1)
-              {
-                printFrameSync (opts, state, " -NXDN96   ", synctest_pos + 1, modulation);
-              }
-            }
-            state->lastsynctype = 17;
-            return (17);
-          }
-          else
-          {
-            state->lastsynctype = 17;
-          }
-        }
+          } /* End if(NXDN_LICH_Parity_Is_Correct || (state->NxdnLich.PreviousCompleteLich == state->NxdnLich.CompleteLich)) */
+        } /* End else if (strncmperr (synctest18, INV_NXDN_SYNC, 10, 1) == 0) */
         else
         {
           /* Nothing to do */
         }
+
+//        if ((strncmperr (synctest18, NXDN_BS_VOICE_SYNC, 18, 1) == 0) || (strncmperr (synctest18, NXDN_MS_VOICE_SYNC, 18, 1) == 0))
+//        {
+//          if ((state->lastsynctype == 8) || (state->lastsynctype == 16))
+//          {
+//            state->carrier = 1;
+//            state->offset = synctest_pos;
+//            state->max = ((state->max) + lmax) / 2;
+//            state->min = ((state->min) + lmin) / 2;
+//            if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
+//            {
+//              sprintf (state->ftype, " NXDN48      ");
+//              if (opts->errorbars == 1)
+//              {
+//                printFrameSync (opts, state, " +NXDN48   ", synctest_pos + 1, modulation);
+//              }
+//            }
+//            else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
+//            {
+//              sprintf (state->ftype, " NXDN96      ");
+//              if (opts->errorbars == 1)
+//              {
+//                printFrameSync (opts, state, " +NXDN96   ", synctest_pos + 1, modulation);
+//              }
+//            }
+//            state->lastsynctype = 8;
+//            return (8);
+//          }
+//          else
+//          {
+//            state->lastsynctype = 8;
+//          }
+//        }
+//        else if ((strncmperr (synctest18, INV_NXDN_BS_VOICE_SYNC, 18, 1) == 0) || (strncmperr (synctest18, INV_NXDN_MS_VOICE_SYNC, 18, 1) == 0))
+//        {
+//          if ((state->lastsynctype == 9) || (state->lastsynctype == 17))
+//          {
+//            state->carrier = 1;
+//            state->offset = synctest_pos;
+//            state->max = ((state->max) + lmax) / 2;
+//            state->min = ((state->min) + lmin) / 2;
+//            if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
+//            {
+//              sprintf (state->ftype, " NXDN48      ");
+//              if (opts->errorbars == 1)
+//              {
+//                printFrameSync (opts, state, " -NXDN48   ", synctest_pos + 1, modulation);
+//              }
+//            }
+//            else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
+//            {
+//              sprintf (state->ftype, " NXDN96      ");
+//              if (opts->errorbars == 1)
+//              {
+//                printFrameSync (opts, state, " -NXDN96   ", synctest_pos + 1, modulation);
+//              }
+//            }
+//            state->lastsynctype = 9;
+//            return (9);
+//          }
+//          else
+//          {
+//            state->lastsynctype = 9;
+//          }
+//        }
+//        else if ((strncmperr (synctest18, NXDN_BS_DATA_SYNC, 18, 1) == 0) || (strncmperr (synctest18, NXDN_MS_DATA_SYNC, 18, 1) == 0))
+//        {
+//          if ((state->lastsynctype == 8) || (state->lastsynctype == 16))
+//          {
+//            state->carrier = 1;
+//            state->offset = synctest_pos;
+//            state->max = ((state->max) + lmax) / 2;
+//            state->min = ((state->min) + lmin) / 2;
+//            if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
+//            {
+//              sprintf (state->ftype, " NXDN48      ");
+//              if (opts->errorbars == 1)
+//              {
+//                printFrameSync (opts, state, " +NXDN48   ", synctest_pos + 1, modulation);
+//              }
+//            }
+//            else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
+//            {
+//              sprintf (state->ftype, " NXDN96      ");
+//              if (opts->errorbars == 1)
+//              {
+//                printFrameSync (opts, state, " +NXDN96   ", synctest_pos + 1, modulation);
+//              }
+//            }
+//            state->lastsynctype = 16;
+//            return (16);
+//          }
+//          else
+//          {
+//            state->lastsynctype = 16;
+//          }
+//        }
+//        else if ((strncmperr (synctest18, INV_NXDN_BS_DATA_SYNC, 18, 1) == 0) || (strncmperr (synctest18, INV_NXDN_MS_DATA_SYNC, 18, 1) == 0))
+//        {
+//          if ((state->lastsynctype == 9) || (state->lastsynctype == 17))
+//          {
+//            state->carrier = 1;
+//            state->offset = synctest_pos;
+//            state->max = ((state->max) + lmax) / 2;
+//            state->min = ((state->min) + lmin) / 2;
+//            sprintf (state->ftype, " NXDN        ");
+//            if (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
+//            {
+//              sprintf (state->ftype, " NXDN48      ");
+//              if (opts->errorbars == 1)
+//              {
+//                printFrameSync (opts, state, " -NXDN48   ", synctest_pos + 1, modulation);
+//              }
+//            }
+//            else /* (state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN96) */
+//            {
+//              sprintf (state->ftype, " NXDN96      ");
+//              if (opts->errorbars == 1)
+//              {
+//                printFrameSync (opts, state, " -NXDN96   ", synctest_pos + 1, modulation);
+//              }
+//            }
+//            state->lastsynctype = 17;
+//            return (17);
+//          }
+//          else
+//          {
+//            state->lastsynctype = 17;
+//          }
+//        }
+//        else
+//        {
+//          /* Nothing to do */
+//        }
       } /* End if ((opts->frame_nxdn96 == 1) || (opts->frame_nxdn48 == 1)) */
       if (opts->frame_dstar == 1)
       {
