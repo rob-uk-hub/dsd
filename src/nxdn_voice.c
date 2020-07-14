@@ -89,10 +89,10 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
 
   /* Determine the current part of superframe
    * (in an AES or DES encrypted frame, two superframes
-   * are used with the same ID, so to decipher the sound
+   * are used with the same IV, so to decipher the sound
    * correctly we must know the current superframe part) */
-  if(state->NxdnSacchFull.PartOfNextEncryptedFrame == 1) PartOfEncryptedSuperFrame = 0;
-  else if(state->NxdnSacchFull.PartOfNextEncryptedFrame == 2) PartOfEncryptedSuperFrame = 1;
+  if(state->NxdnElementsContent.PartOfNextEncryptedFrame == 1) PartOfEncryptedSuperFrame = 0;
+  else if(state->NxdnElementsContent.PartOfNextEncryptedFrame == 2) PartOfEncryptedSuperFrame = 1;
   else PartOfEncryptedSuperFrame = 0;
 
   /* Decode the SACCH only when all 4 voice frame

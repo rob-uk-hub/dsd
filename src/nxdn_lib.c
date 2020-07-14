@@ -204,32 +204,6 @@ uint8_t NXDN_SACCH_raw_part_decode(uint8_t * Input, uint8_t * Output)
   CNXDNConvolution_chainback(m_data, 36U);
 
 
-//  for (i = 0; i < 30; i++)
-//  {
-//    sacch[nsW[(2*i)]]   = Input[(2*i)];
-//    sacch[nsW[(2*i)+1]] = Input[(2*i) + 1];
-//  }
-//
-//  /* For the sake of simplicity, handle the re-insertion of punctured bits here.
-//   * This makes the actual Viterbi decoder code a LOT simpler. */
-//  for (i = 30; i < 36; i++)
-//  {
-//    sacch[nsW[2*i]]   = 0;
-//    sacch[nsW[2*i+1]] = 0;
-//  }
-//
-//  CNXDNConvolution_start();
-//  n = 0;
-//  for (i = 0U; i < 40U; i++)
-//  {
-//    s0 = (sacch[n++] << 1); /* 0->0 ; 1->2 */
-//    s1 = (sacch[n++] << 1); /* 0->0 ; 1->2 */
-//
-//    CNXDNConvolution_decode(s0, s1);
-//  }
-//
-//  CNXDNConvolution_chainback(m_data, 36U);
-
   for(i = 0; i < 4; i++)
   {
     Output[(i*8)+0] = (m_data[i] >> 7) & 1;
@@ -292,9 +266,7 @@ void NXDN_SACCH_Full_decode(dsd_opts * opts, dsd_state * state)
 {
   uint8_t SACCH[72];
   uint32_t i;
-  uint8_t MessageType;
   uint8_t CrcCorrect = 1;
-  uint64_t CurrentIV = 0;
 
   /* Consider all SACCH CRC parts as corrects */
   CrcCorrect = 1;
@@ -308,16 +280,159 @@ void NXDN_SACCH_Full_decode(dsd_opts * opts, dsd_state * state)
     if(state->NxdnSacchRawPart[i].CrcIsGood == 0) CrcCorrect = 0;
   }
 
+  /* Decodes the element content */
+  NXDN_Elements_Content_decode(opts, state, CrcCorrect, SACCH);
+
+} /* End NXDN_SACCH_Full_decode() */
+
+
+/*
+ * @brief : This function decodes the RAW part of FACCH1 received when
+ *          each voice frame starts.
+ *
+ * @param Input : A 144 bits (144 bytes) buffer pointer of input data
+ *
+ * @param Output : A 96 bits (80 bytes data + 12 bytes CRC + 4 bytes "Tail" all "0") buffer where write output data
+ *
+ * @return 1 when CRC is good
+ *         0 when CRC is bad
+ *
+ */
+uint8_t NXDN_FACCH1_decode(uint8_t * Input, uint8_t * Output)
+{
+  uint32_t i;
+  uint8_t  GoodCrc = 0;
+  uint16_t CRCComputed = 0;
+  uint16_t CRCExtracted = 0;
+  uint8_t  facch1Raw[144]; /* FACCH1 bits retrieved from RF channel */
+  uint8_t  s0;
+  uint8_t  s1;
+  uint8_t  m_data[12] = {0}; /* FACCH1 bytes after de-convolution (96 bits) */
+  uint32_t index = 0;
+  uint32_t punctureIndex = 0;
+  uint8_t  temp[210] = {0}; /* FACCH1 working area */
+
+  /* De-interleave */
+  for(i = 0; i < 144; i++)
+  {
+    facch1Raw[DSDNXDN_FACCH1_m_Interleave[i]] = Input[i];
+  }
+
+  /* Un-Punture */
+  for (index = 0, punctureIndex = 0, i = 0; i < 144; i++)
+  {
+    if (index == (uint32_t)DSDNXDN_FACCH1_m_PunctureList[punctureIndex])
+    {
+      temp[index++] = 1;
+      punctureIndex++;
+    }
+
+    temp[index++] = facch1Raw[i]<<1; // 0->0, 1->2
+  }
+
+  for (i = 0; i < 8; i++)
+  {
+    temp[index++] = 0;
+  }
+
+  /* Convolutional decoding */
+  CNXDNConvolution_start();
+  for (i = 0U; i < 100U; i++)
+  {
+    s0 = temp[(2*i)];
+    s1 = temp[(2*i)+1];
+
+    CNXDNConvolution_decode(s0, s1);
+  }
+
+  CNXDNConvolution_chainback(m_data, 96U);
+
+  /* Reconstitute L3 Data (Data 80 bits + CRC 12 bits + 4 tail bits = Total 96 bits = 12 bytes) */
+  for(i = 0; i < 12; i++)
+  {
+    Output[(i*8)+0] = (m_data[i] >> 7) & 1;
+    Output[(i*8)+1] = (m_data[i] >> 6) & 1;
+    Output[(i*8)+2] = (m_data[i] >> 5) & 1;
+    Output[(i*8)+3] = (m_data[i] >> 4) & 1;
+    Output[(i*8)+4] = (m_data[i] >> 3) & 1;
+    Output[(i*8)+5] = (m_data[i] >> 2) & 1;
+    Output[(i*8)+6] = (m_data[i] >> 1) & 1;
+    Output[(i*8)+7] = (m_data[i] >> 0) & 1;
+  }
+
+  /* Extract the 12 bits CRC */
+  CRCExtracted = ((uint16_t)(m_data[10] << 4) | (uint16_t)(m_data[11] >> 4)) & 0x0FFF;
+
+  /* Compute the 12 bits CRC */
+  CRCComputed = CRC12BitdNXDN(Output, 80);
+
+  //printf("\n");
+
+  //printf("SACCH1 Data = ");
+  //for(i = 0; i < 12; i++)
+  //{
+  //  printf("0x%02X - ", m_data[i]);
+  //}
+  //printf("\n");
+
+  //printf("CRC computed = 0x%03X - CRC extracted = 0x%03X\n", CRCComputed, CRCExtracted);
+
+  /* Check CRCs */
+  if(CRCExtracted == CRCComputed)
+  {
+    //printf("OK !\n");
+    GoodCrc = 1;
+  }
+  else
+  {
+    //printf("ERROR !\n");
+    GoodCrc = 0;
+  }
+
+  return GoodCrc;
+} /* End NXDN_FACCH1_decode() */
+
+
+/*
+ * @brief : This function decodes the content of elements in :
+ *          - Full SACCH (when 4 voice frame parts have been
+ *            successfully received)
+ *
+ * @param opts : Option structure parameters pointer
+ *
+ * @param state : State structure parameters pointer
+ *
+ * @param CrcCorrect : The CRC status of the last element received
+ *                     0 = CRC incorrect
+ *                     Oher = CRC correct
+ *
+ * @param ElementsContent : A 64 to 144 bits buffer containing the
+ *                         element content
+ *
+ * @return None
+ *
+ */
+void NXDN_Elements_Content_decode(dsd_opts * opts, dsd_state * state,
+                                  uint8_t CrcCorrect, uint8_t * ElementsContent)
+{
+  uint32_t i;
+  uint8_t MessageType;
+  uint64_t CurrentIV = 0;
+
   /* Get the "Message Type" field */
-  MessageType  = (SACCH[2] & 1) << 5;
-  MessageType |= (SACCH[3] & 1) << 4;
-  MessageType |= (SACCH[4] & 1) << 3;
-  MessageType |= (SACCH[5] & 1) << 2;
-  MessageType |= (SACCH[6] & 1) << 1;
-  MessageType |= (SACCH[7] & 1) << 0;
+  MessageType  = (ElementsContent[2] & 1) << 5;
+  MessageType |= (ElementsContent[3] & 1) << 4;
+  MessageType |= (ElementsContent[4] & 1) << 3;
+  MessageType |= (ElementsContent[5] & 1) << 2;
+  MessageType |= (ElementsContent[6] & 1) << 1;
+  MessageType |= (ElementsContent[7] & 1) << 0;
+
+  /* Save the "F1" and "F2" flags */
+  state->NxdnElementsContent.F1 = ElementsContent[0];
+  state->NxdnElementsContent.F2 = ElementsContent[1];
 
   /* Save the "Message Type" field */
-  state->NxdnSacchFull.MessageType = MessageType;
+  state->NxdnElementsContent.MessageType = MessageType;
 
   //printf("Message Type = 0x%02X ", MessageType & 0xFF);
 
@@ -325,37 +440,37 @@ void NXDN_SACCH_Full_decode(dsd_opts * opts, dsd_state * state)
   switch(MessageType)
   {
     /* VCALL */
-    case 0x01:
+    case NXDN_VCALL:
     {
       /* Set the CRC state */
-      state->NxdnSacchFull.VcallCrcIsGood = CrcCorrect;
+      state->NxdnElementsContent.VCallCrcIsGood = CrcCorrect;
 
       /* Decode the "VCALL" message */
-      NXDN_decode_VCALL(opts, state, SACCH);
+      NXDN_decode_VCALL(opts, state, ElementsContent);
 
       /* Check the "Cipher Type" and the "Key ID" validity */
-      if(state->NxdnSacchRawPart[3].CrcIsGood)
+      if(CrcCorrect)
       {
-        state->NxdnSacchFull.CipherParameterValidity = 1;
+        state->NxdnElementsContent.CipherParameterValidity = 1;
       }
-      else state->NxdnSacchFull.CipherParameterValidity = 0;
+      else state->NxdnElementsContent.CipherParameterValidity = 0;
       break;
-    } /* End case 0x01: */
+    } /* End case NXDN_VCALL: */
 
     /* VCALL_IV */
-    case 0x03:
+    case NXDN_VCALL_IV:
     {
       /* Set the CRC state */
-      state->NxdnSacchFull.VcallIvCrcIsGood = CrcCorrect;
+      state->NxdnElementsContent.VCallIvCrcIsGood = CrcCorrect;
 
       /* Decode the "VCALL_IV" message */
-      NXDN_decode_VCALL_IV(opts, state, SACCH);
+      NXDN_decode_VCALL_IV(opts, state, ElementsContent);
 
       if(CrcCorrect)
       {
         /* CRC is correct, copy the next theorical IV to use directly from the
          * received VCALL_IV */
-        memcpy(state->NxdnSacchFull.NextIVComputed, state->NxdnSacchFull.IV, 8);
+        memcpy(state->NxdnElementsContent.NextIVComputed, state->NxdnElementsContent.IV, 8);
       }
       else
       {
@@ -365,7 +480,7 @@ void NXDN_SACCH_Full_decode(dsd_opts * opts, dsd_state * state)
         /* Convert the 8 bytes buffer into a 64 bits integer */
         for(i = 0; i < 8; i++)
         {
-          CurrentIV |= state->NxdnSacchFull.NextIVComputed[i];
+          CurrentIV |= state->NxdnElementsContent.NextIVComputed[i];
           CurrentIV = CurrentIV << 8;
         }
 
@@ -373,16 +488,17 @@ void NXDN_SACCH_Full_decode(dsd_opts * opts, dsd_state * state)
          * so do not compute the next IV */
       }
       break;
-    } /* End case 0x03: */
+    } /* End case NXDN_VCALL_IV: */
 
     /* Unknown Message Type */
     default:
     {
+      printf("Unknown Message type ");
       break;
     }
   } /* End switch(MessageType) */
 
-} /* End NXDN_SACCH_Full_decode() */
+} /* End NXDN_Elements_Content_decode() */
 
 
 /*
@@ -415,7 +531,7 @@ void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message)
   UNUSED_VARIABLE(DuplexMode[0]);
   UNUSED_VARIABLE(TransmissionMode[0]);
 
-  /* Message[0..8] contains :
+  /* Message[0..7] contains :
    * - The "F1" and "F2" flags
    * - The "Message Type" (already decoded before calling this function)
    *
@@ -424,31 +540,31 @@ void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message)
 
   /* Decode "CC Option" */
   CCOption = (uint8_t)ConvertBitIntoBytes(&Message[8], 8);
-  state->NxdnSacchFull.CCOption = CCOption;
+  state->NxdnElementsContent.CCOption = CCOption;
 
   /* Decode "Call Type" */
   CallType = (uint8_t)ConvertBitIntoBytes(&Message[16], 3);
-  state->NxdnSacchFull.CallType = CallType;
+  state->NxdnElementsContent.CallType = CallType;
 
   /* Decode "Voice Call Option" */
   VoiceCallOption = (uint8_t)ConvertBitIntoBytes(&Message[19], 5);
-  state->NxdnSacchFull.VoiceCallOption = VoiceCallOption;
+  state->NxdnElementsContent.VoiceCallOption = VoiceCallOption;
 
   /* Decode "Source Unit ID" */
   SourceUnitID = (uint16_t)ConvertBitIntoBytes(&Message[24], 16);
-  state->NxdnSacchFull.SourceUnitID = SourceUnitID;
+  state->NxdnElementsContent.SourceUnitID = SourceUnitID;
 
   /* Decode "Destination ID" */
   DestinationID = (uint16_t)ConvertBitIntoBytes(&Message[40], 16);
-  state->NxdnSacchFull.DestinationID = DestinationID;
+  state->NxdnElementsContent.DestinationID = DestinationID;
 
   /* Decode the "Cipher Type" */
   CipherType = (uint8_t)ConvertBitIntoBytes(&Message[56], 2);
-  state->NxdnSacchFull.CipherType = CipherType;
+  state->NxdnElementsContent.CipherType = CipherType;
 
   /* Decode the "Key ID" */
   KeyID = (uint8_t)ConvertBitIntoBytes(&Message[58], 6);
-  state->NxdnSacchFull.KeyID = KeyID;
+  state->NxdnElementsContent.KeyID = KeyID;
 
   /* Print the "CC Option" */
   if(CCOption & 0x80) printf("Emergency ");
@@ -465,13 +581,13 @@ void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message)
    */
   if((CipherType == 2) || (CipherType == 3))
   {
-    state->NxdnSacchFull.PartOfCurrentEncryptedFrame = 1;
-    state->NxdnSacchFull.PartOfNextEncryptedFrame    = 2;
+    state->NxdnElementsContent.PartOfCurrentEncryptedFrame = 1;
+    state->NxdnElementsContent.PartOfNextEncryptedFrame    = 2;
   }
   else
   {
-    state->NxdnSacchFull.PartOfCurrentEncryptedFrame = 1;
-    state->NxdnSacchFull.PartOfNextEncryptedFrame    = 1;
+    state->NxdnElementsContent.PartOfCurrentEncryptedFrame = 1;
+    state->NxdnElementsContent.PartOfNextEncryptedFrame    = 1;
   }
 
   /* Print the "Call Type" */
@@ -483,13 +599,13 @@ void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message)
 
   /* Print the "Cipher Type" */
   if(CipherType != 0) printf("%s - ", NXDN_Cipher_Type_To_Str(CipherType));
-  
+
   /* Print the Key ID */
   if(CipherType != 0) printf("Key ID %u - ", KeyID & 0xFF);
 
   /* Print Source ID and Destination ID (Talk Group or Unit ID) */
   printf("Src=%u - Dst/TG=%u ", SourceUnitID & 0xFFFF, DestinationID & 0xFFFF);
-  if(state->NxdnSacchFull.VcallCrcIsGood) printf("   (OK)   - ");
+  if(state->NxdnElementsContent.VCallCrcIsGood) printf("   (OK)   - ");
   else printf("(CRC ERR) - ");
 
   //printf("\nVCALL = ");
@@ -522,10 +638,19 @@ void NXDN_decode_VCALL_IV(dsd_opts * opts, dsd_state * state, uint8_t * Message)
   UNUSED_VARIABLE(opts);
   UNUSED_VARIABLE(state);
 
+  /* Message[0..7] contains :
+   * - The "F1" and "F2" flags
+   * - The "Message Type" (already decoded before calling this function)
+   *
+   * So no need to decode it a second time
+   *
+   * Message[8..71] contains : The 64 bits IV
+   */
+
   /* Extract the IV from the VCALL_IV message */
   for(i = 0; i < 8; i++)
   {
-    state->NxdnSacchFull.IV[i] = (uint8_t)ConvertBitIntoBytes(&Message[(i + 1) * 8], 8);
+    state->NxdnElementsContent.IV[i] = (uint8_t)ConvertBitIntoBytes(&Message[(i + 1) * 8], 8);
   }
 
   /* On an AES or DES encrypted frame one IV is used on two
@@ -536,8 +661,8 @@ void NXDN_decode_VCALL_IV(dsd_opts * opts, dsd_state * state, uint8_t * Message)
    *
    * Set the correct part of encrypted frame flag.
    */
-  state->NxdnSacchFull.PartOfCurrentEncryptedFrame = 2;
-  state->NxdnSacchFull.PartOfNextEncryptedFrame    = 1;
+  state->NxdnElementsContent.PartOfCurrentEncryptedFrame = 2;
+  state->NxdnElementsContent.PartOfNextEncryptedFrame    = 1;
 
 } /* End NXDN_decode_VCALL_IV() */
 
@@ -635,6 +760,34 @@ char * NXDN_Cipher_Type_To_Str(uint8_t CipherType)
 } /* End NXDN_Cipher_Type_To_Str() */
 
 
+/* CRC 12 bits computation with the following polynomial :
+ * X^12 + X^11 + X^3 + X^2 + X + 1
+ *
+ * X^12 + (1X^11 + 0X^10 + 0X^9 + 0X^8 + 0X^7 + 0X^6 + 0X^5 + 0X^4 + 1X^3 + 1X^2 + 1X^1 + 1X^0)
+ * => Polynomial = 0b100000001111 = 0x80F
+ */
+uint16_t CRC12BitdNXDN(uint8_t * BufferIn, uint32_t BitLength)
+{
+  uint16_t CRC = 0x0FFF;      /* Initial value = All bit to '1' (only 12 LSBit are used) */
+  uint16_t Polynome = 0x80F;  /* X^12 + X^11 + X^3 + X^2 + X + 1 */
+  uint32_t i;
+
+  for(i = 0; i < BitLength; i++)
+  {
+    if(((CRC >> 11) & 1) ^ (BufferIn[i] & 1))
+    {
+      CRC = ((CRC << 1) ^ Polynome) & 0x0FFF;
+    }
+    else
+    {
+      CRC = (CRC << 1) & 0x0FFF;
+    }
+  }
+
+  return CRC;
+} /* End CRC12BitdNXDN() */
+
+
 /* CRC 6 bit computation with the following
  * polynomial : X^6 + X^5 + X^2 + X + 1
  *
@@ -643,7 +796,7 @@ char * NXDN_Cipher_Type_To_Str(uint8_t CipherType)
  */
 uint8_t CRC6BitdNXDN(uint8_t * BufferIn, uint32_t BitLength)
 {
-  uint8_t  CRC = 0x3F;      /* Initial value = All bit to '1' (only 6 LSBit used) */
+  uint8_t  CRC = 0x3F;      /* Initial value = All bit to '1' (only 6 LSBit are used) */
   uint8_t  Polynome = 0x27; /* X^6 + X^5 + X^2 + X + 1 */
   uint32_t i;
 
@@ -714,32 +867,32 @@ void NxdnEncryptionStreamGeneration (dsd_opts* opts, dsd_state* state, uint8_t K
   UNUSED_VARIABLE(TempIV);
   UNUSED_VARIABLE(Temp);
 
-  if((state->NxdnSacchFull.CipherParameterValidity))
+  if((state->NxdnElementsContent.CipherParameterValidity))
   {
     //printf("Scrambler Encryption ");
 
     /* Scrambler encryption mode */
-    if(state->NxdnSacchFull.CipherType == 0x01)
+    if(state->NxdnElementsContent.CipherType == 0x01)
     {
       /* Encryption not supported in the public version
        * Set the keystream to 0 */
       memset(KeyStream, 0, sizeof(uint8_t) * 1664);
 
-    } /* End if(state->NxdnSacchFull.CipherType == 0x01) - Scrambler */
+    } /* End if(state->NxdnElementsContent.CipherType == 0x01) - Scrambler */
     /* DES Mode */
-    else if(state->NxdnSacchFull.CipherType == 0x02)
+    else if(state->NxdnElementsContent.CipherType == 0x02)
     {
       /* Encryption not supported in the public version
        * Set the keystream to 0 */
       memset(KeyStream, 0, sizeof(uint8_t) * 1664);
-    } /* End else if(state->NxdnSacchFull.CipherType == 0x02) - DES mode */
+    } /* End else if(state->NxdnElementsContent.CipherType == 0x02) - DES mode */
     /* AES Mode */
-    else if(state->NxdnSacchFull.CipherType == 0x03)
+    else if(state->NxdnElementsContent.CipherType == 0x03)
     {
       /* Encryption not supported in the public version
        * Set the keystream to 0 */
       memset(KeyStream, 0, sizeof(uint8_t) * 1664);
-    } /* End else if(state->NxdnSacchFull.CipherType == 0x03) - AES mode */
+    } /* End else if(state->NxdnElementsContent.CipherType == 0x03) - AES mode */
     else
     {
       /* No encryption required, simply set the keystream to "0" */

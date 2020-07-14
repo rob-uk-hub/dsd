@@ -28,6 +28,8 @@ extern const char nxdnpr[145];
 extern const unsigned char nsW[72];
 extern const int DSDNXDN_SACCH_m_Interleave[60];
 extern const int DSDNXDN_SACCH_m_PunctureList[12];
+extern const int DSDNXDN_FACCH1_m_Interleave[144];
+extern const int DSDNXDN_FACCH1_m_PunctureList[48];
 
 #else
 /*
@@ -159,7 +161,77 @@ const int DSDNXDN_SACCH_m_Interleave[60] =
 
 const int DSDNXDN_SACCH_m_PunctureList[12] = { 5, 11, 17, 23, 29, 35, 41, 47, 53, 59, 65, 71 };
 
+const unsigned int DSDNXDN_FACCH1_m_Interleave[144] =
+{
+  0,  16, 32, 48, 64, 80, 96,  112, 128,
+  1,  17, 33, 49, 65, 81, 97,  113, 129,
+  2,  18, 34, 50, 66, 82, 98,  114, 130,
+  3,  19, 35, 51, 67, 83, 99,  115, 131,
+  4,  20, 36, 52, 68, 84, 100, 116, 132,
+  5,  21, 37, 53, 69, 85, 101, 117, 133,
+  6,  22, 38, 54, 70, 86, 102, 118, 134,
+  7,  23, 39, 55, 71, 87, 103, 119, 135,
+  8,  24, 40, 56, 72, 88, 104, 120, 136,
+  9,  25, 41, 57, 73, 89, 105, 121, 137,
+  10, 26, 42, 58, 74, 90, 106, 122, 138,
+  11, 27, 43, 59, 75, 91, 107, 123, 139,
+  12, 28, 44, 60, 76, 92, 108, 124, 140,
+  13, 29, 45, 61, 77, 93, 109, 125, 141,
+  14, 30, 46, 62, 78, 94, 110, 126, 142,
+  15, 31, 47, 63, 79, 95, 111, 127, 143,
+};
+
+const unsigned int DSDNXDN_FACCH1_m_PunctureList[48] =
+{
+    1U,   5U,   9U,  13U,  17U,  21U,  25U,  29U,  33U,  37U,
+   41U,  45U,  49U,  53U,  57U,  61U,  65U,  69U,  73U,  77U,
+   81U,  85U,  89U,  93U,  97U, 101U, 105U, 109U, 113U, 117U,
+  121U, 125U, 129U, 133U, 137U, 141U, 145U, 149U, 153U, 157U,
+  161U, 165U, 169U, 173U, 177U, 181U, 185U, 189U
+};
+
 #endif /* _MAIN */
+
+enum
+{
+  NXDN_VCALL           = 0b000001,  /* VCALL = VCALL_REQ = VCALL_RESP */
+  NXDN_VCALL_IV        = 0b000011,
+  NXDN_DCALL_HDR       = 0b001001,  /* Header Format - NXDN_DCALL_HDR = NXDN_DCALL_REQ = NXDN_DCALL_RESP */
+  NXDN_DCALL_USR       = 0b001011,  /* User Data Format */
+  NXDN_DCALL_ACK       = 0b001100,
+  NXDN_REL_EX          = 0b000111,
+  NXDN_HEAD_DLY        = 0b001111,
+  NXDN_SDCALL_REQ_HDR  = 0b111000,  /* Header Format */
+  NXDN_SDCALL_REQ_USR  = 0b111001,  /* User Data Format */
+  NXDN_SDCALL_RESP     = 0b111011,
+  NXDN_SDCALL_IV       = 0b111010,
+  NXDN_STAT_INQ_REQ    = 0b110000,
+  NXDN_STAT_INQ_RESP   = 0b110001,
+  NXDN_STAT_REQ        = 0b110010,
+  NXDN_STAT_RESP       = 0b110011,
+  NXDN_REM_CON_REQ     = 0b110100,
+  NXDN_REM_CON_RESP    = 0b110101,
+  NXDN_REM_CON_E_REQ   = 0b110110,
+  NXDN_REM_CON_E_RESP  = 0b110111,
+//NXDN_VCALL_REQ       = 0b000001,  /* VCALL = VCALL_REQ = VCALL_RESP */
+//NXDN_VCALL_RESP      = 0b000001,  /* VCALL = VCALL_REQ = VCALL_RESP */
+  NXDN_VCALL_REC_REQ   = 0b000010,  /* NXDN_VCALL_REC_REQ = NXDN_VCALL_REC_RESP */
+//NXDN_VCALL_REC_RESP  = 0b000010,
+  NXDN_VCALL_CONN_REQ  = 0b000011,  /* NXDN_VCALL_CONN_REQ = NXDN_VCALL_CONN_RESP */
+//NXDN_VCALL_CONN_RESP = 0b000011,  /* NXDN_VCALL_CONN_REQ = NXDN_VCALL_CONN_RESP */
+  NXDN_VCALL_ASSGN     = 0b000100,
+  NXDN_VCALL_ASSGN_DUP = 0b000101,
+//NXDN_DCALL_REQ       = 0b001001,  /* NXDN_DCALL_HDR = NXDN_DCALL_REQ = NXDN_DCALL_RESP */
+//NXDN_DCALL_RESP      = 0b001001,  /* NXDN_DCALL_HDR = NXDN_DCALL_REQ = NXDN_DCALL_RESP */
+  NXDN_DCALL_REC_REQ   = 0b001010,  /* NXDN_DCALL_REC_REQ = NXDN_DCALL_REC_RESP */
+//NXDN_DCALL_REC_RESP  = 0b001010,  /* NXDN_DCALL_REC_REQ = NXDN_DCALL_REC_RESP */
+  NXDN_DCALL_ASSGN     = 0b001110,
+  NXDN_DCALL_ASSGN_DUP = 0b001101,
+  NXDN_IDLE            = 0b010000,
+  NXDN_DISC_REQ        = 0b010001,  /* NXDN_DISC_REQ = NXDN_DISC */
+  NXDN_DISC            = 0b010001   /* NXDN_DISC_REQ = NXDN_DISC */
+};
+
 
 #ifdef __cplusplus
 }
