@@ -82,6 +82,7 @@ typedef unsigned char bool;
 #endif
 
 
+
 /*
  * global variables
  */
@@ -251,6 +252,13 @@ typedef struct
   uint8_t Data[80];
   uint8_t CrcIsGood;
 } NxdnFacch1RawPart_t;
+
+
+typedef struct
+{
+  uint8_t Data[184];
+  uint8_t CrcIsGood;
+} NxdnFacch2RawPart_t;
 
 
 typedef struct
@@ -502,6 +510,7 @@ typedef struct
 
   NxdnSacchRawPart_t NxdnSacchRawPart[4];
   NxdnFacch1RawPart_t NxdnFacch1RawPart[2];
+  NxdnFacch2RawPart_t NxdnFacch2RawPart;
   NxdnElementsContent_t NxdnElementsContent;
   NxdnLich_t NxdnLich;
 
@@ -752,6 +761,7 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted);
 void ProcessNxdnRTCH_C_Frame(dsd_opts * opts, dsd_state * state, uint8_t Inverted);
 void ProcessNXDNIdleData (dsd_opts * opts, dsd_state * state, uint8_t Inverted);
 void ProcessNXDNFacch1Data (dsd_opts * opts, dsd_state * state, uint8_t Inverted);
+void ProcessNXDNUdchData (dsd_opts * opts, dsd_state * state, uint8_t Inverted);
 
 
 /* NXDN functions */
@@ -769,6 +779,7 @@ uint8_t NXDN_decode_LICH(uint8_t   InputLich[8],
 uint8_t NXDN_SACCH_raw_part_decode(uint8_t * Input, uint8_t * Output);
 void NXDN_SACCH_Full_decode(dsd_opts * opts, dsd_state * state);
 uint8_t NXDN_FACCH1_decode(uint8_t * Input, uint8_t * Output);
+uint8_t NXDN_UDCH_decode(uint8_t * Input, uint8_t * Output);
 void NXDN_Elements_Content_decode(dsd_opts * opts, dsd_state * state,
                                   uint8_t CrcCorrect, uint8_t * ElementsContent);
 void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message);
@@ -776,8 +787,9 @@ void NXDN_decode_VCALL_IV(dsd_opts * opts, dsd_state * state, uint8_t * Message)
 char * NXDN_Call_Type_To_Str(uint8_t CallType);
 void NXDN_Voice_Call_Option_To_Str(uint8_t VoiceCallOption, uint8_t * Duplex, uint8_t * TransmissionMode);
 char * NXDN_Cipher_Type_To_Str(uint8_t CipherType);
-uint16_t CRC12BitdNXDN(uint8_t * BufferIn, uint32_t BitLength);
-uint8_t CRC6BitdNXDN(uint8_t * BufferIn, uint32_t BitLength);
+uint16_t CRC15BitNXDN(uint8_t * BufferIn, uint32_t BitLength);
+uint16_t CRC12BitNXDN(uint8_t * BufferIn, uint32_t BitLength);
+uint8_t CRC6BitNXDN(uint8_t * BufferIn, uint32_t BitLength);
 void ScrambledNXDNVoiceBit(int * LfsrValue, char * BufferIn, char * BufferOut, int NbOfBitToScramble);
 void NxdnEncryptionStreamGeneration (dsd_opts* opts, dsd_state* state, uint8_t KeyStream[1664]);
 

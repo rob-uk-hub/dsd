@@ -220,7 +220,7 @@ uint8_t NXDN_SACCH_raw_part_decode(uint8_t * Input, uint8_t * Output)
   CRCExtracted = m_data[3] & 0x3F;
 
   /* Compute the 6 bit CRC */
-  CRCComputed = CRC6BitdNXDN(Output, 26);
+  CRCComputed = CRC6BitNXDN(Output, 26);
 
   /* Compute the RAN (6 last bits of the SR Information in the SACCH) */
   //RAN = m_data[0] & 0x3F;
@@ -364,7 +364,7 @@ uint8_t NXDN_FACCH1_decode(uint8_t * Input, uint8_t * Output)
   CRCExtracted = ((uint16_t)(m_data[10] << 4) | (uint16_t)(m_data[11] >> 4)) & 0x0FFF;
 
   /* Compute the 12 bits CRC */
-  CRCComputed = CRC12BitdNXDN(Output, 80);
+  CRCComputed = CRC12BitNXDN(Output, 80);
 
   //printf("\n");
 
@@ -391,6 +391,118 @@ uint8_t NXDN_FACCH1_decode(uint8_t * Input, uint8_t * Output)
 
   return GoodCrc;
 } /* End NXDN_FACCH1_decode() */
+
+
+
+/*
+ * @brief : This function decodes the UDCH/FACCH2 received.
+ *
+ * @param Input : A 348 bits (348 bytes) buffer pointer of input data
+ *
+ * @param Output : A 203 bits (184 bytes data + 15 bytes CRC + 4 bytes "Tail" all "0") buffer where write output data
+ *
+ * @return 1 when CRC is good
+ *         0 when CRC is bad
+ *
+ */
+uint8_t NXDN_UDCH_decode(uint8_t * Input, uint8_t * Output)
+{
+  uint32_t i;
+  uint8_t  GoodCrc = 0;
+  uint16_t CRCComputed = 0;
+  uint16_t CRCExtracted = 0;
+  uint8_t  UdchRaw[348]; /* UDCH bits retrieved from RF channel */
+  uint8_t  s0;
+  uint8_t  s1;
+  uint8_t  m_data[26] = {0}; /* UDCH bytes after de-convolution (203 bits) */
+  uint32_t index = 0;
+  uint32_t punctureIndex = 0;
+  uint8_t  temp[420] = {0}; /* UDCH working area */
+
+  /* De-interleave */
+  for(i = 0; i < 348; i++)
+  {
+    UdchRaw[DSDNXDN_UDCH_m_Interleave[i]] = Input[i];
+  }
+
+  /* Un-Punture */
+  for (index = 0, punctureIndex = 0, i = 0; i < 348; i++)
+  {
+    if (index == (uint32_t)DSDNXDN_UDCH_m_PunctureList[punctureIndex])
+    {
+      temp[index++] = 1;
+      punctureIndex++;
+    }
+
+    temp[index++] = UdchRaw[i]<<1; // 0->0, 1->2
+  }
+
+  for (i = 0; i < 8; i++)
+  {
+    temp[index++] = 0;
+  }
+
+  /* Convolutional decoding */
+  CNXDNConvolution_start();
+  for (i = 0U; i < 207U; i++)
+  {
+    s0 = temp[(2*i)];
+    s1 = temp[(2*i)+1];
+
+    CNXDNConvolution_decode(s0, s1);
+  }
+
+  CNXDNConvolution_chainback(m_data, 203U);
+
+  /* Reconstitute L3 Data (Data 184 bits + CRC 15 bits + 4 tail bits = Total 203 bits = 26 bytes) */
+  for(i = 0; i < 25; i++)
+  {
+    Output[(i*8)+0] = (m_data[i] >> 7) & 1;
+    Output[(i*8)+1] = (m_data[i] >> 6) & 1;
+    Output[(i*8)+2] = (m_data[i] >> 5) & 1;
+    Output[(i*8)+3] = (m_data[i] >> 4) & 1;
+    Output[(i*8)+4] = (m_data[i] >> 3) & 1;
+    Output[(i*8)+5] = (m_data[i] >> 2) & 1;
+    Output[(i*8)+6] = (m_data[i] >> 1) & 1;
+    Output[(i*8)+7] = (m_data[i] >> 0) & 1;
+  }
+  /* Get the 3 last bits */
+  Output[200] = (m_data[25] >> 7) & 1;
+  Output[201] = (m_data[25] >> 6) & 1;
+  Output[202] = (m_data[25] >> 5) & 1;
+
+  /* Extract the 15 bits CRC */
+  CRCExtracted = ((uint16_t)(m_data[23] << 7) | (uint16_t)(m_data[24] >> 1)) & 0x7FFF;
+
+  /* Compute the 15 bits CRC */
+  CRCComputed = CRC15BitNXDN(Output, 184);
+
+  //printf("\n");
+
+  //printf("FACCH2 Data = ");
+  //for(i = 0; i < 26; i++)
+  //{
+  //  printf("0x%02X - ", m_data[i]);
+  //}
+  //printf("\n");
+
+  //printf("CRC computed = 0x%04X - CRC extracted = 0x%04X\n", CRCComputed, CRCExtracted);
+
+  /* Check CRCs */
+  if(CRCExtracted == CRCComputed)
+  {
+    //printf("OK !\n");
+    GoodCrc = 1;
+  }
+  else
+  {
+    //printf("ERROR !\n");
+    GoodCrc = 0;
+  }
+
+  return GoodCrc;
+} /* End NXDN_UDCH_decode() */
+
 
 
 /*
@@ -760,13 +872,41 @@ char * NXDN_Cipher_Type_To_Str(uint8_t CipherType)
 } /* End NXDN_Cipher_Type_To_Str() */
 
 
+/* CRC 15 bits computation with the following polynomial :
+ * X^15 + X^14 + X^11 + X^10 + X^7 + X^6 + X^2 + 1
+ *
+ * X^15 + (1X^14 + 0X^13 + 0X^12 + 1X^11 + 1X^10 + 0X^9 + 0X^8 + 1X^7 + 1X^6 + 0X^5 + 0X^4 + 0X^3 + 1X^2 + 0X^1 + 1X^0)
+ * => Polynomial = 0b100110011000101 = 0x4CC5
+ */
+uint16_t CRC15BitNXDN(uint8_t * BufferIn, uint32_t BitLength)
+{
+  uint16_t CRC = 0x7FFF;      /* Initial value = All bit to '1' (only 15 LSBit are used) */
+  uint16_t Polynome = 0x4CC5;  /* X^15 + X^14 + X^11 + X^10 + X^7 + X^6 + X^2 + 1 */
+  uint32_t i;
+
+  for(i = 0; i < BitLength; i++)
+  {
+    if(((CRC >> 14) & 1) ^ (BufferIn[i] & 1))
+    {
+      CRC = ((CRC << 1) ^ Polynome) & 0x7FFF;
+    }
+    else
+    {
+      CRC = (CRC << 1) & 0x7FFF;
+    }
+  }
+
+  return CRC;
+} /* End CRC15BitNXDN() */
+
+
 /* CRC 12 bits computation with the following polynomial :
  * X^12 + X^11 + X^3 + X^2 + X + 1
  *
  * X^12 + (1X^11 + 0X^10 + 0X^9 + 0X^8 + 0X^7 + 0X^6 + 0X^5 + 0X^4 + 1X^3 + 1X^2 + 1X^1 + 1X^0)
  * => Polynomial = 0b100000001111 = 0x80F
  */
-uint16_t CRC12BitdNXDN(uint8_t * BufferIn, uint32_t BitLength)
+uint16_t CRC12BitNXDN(uint8_t * BufferIn, uint32_t BitLength)
 {
   uint16_t CRC = 0x0FFF;      /* Initial value = All bit to '1' (only 12 LSBit are used) */
   uint16_t Polynome = 0x80F;  /* X^12 + X^11 + X^3 + X^2 + X + 1 */
@@ -785,7 +925,7 @@ uint16_t CRC12BitdNXDN(uint8_t * BufferIn, uint32_t BitLength)
   }
 
   return CRC;
-} /* End CRC12BitdNXDN() */
+} /* End CRC12BitNXDN() */
 
 
 /* CRC 6 bit computation with the following
@@ -794,7 +934,7 @@ uint16_t CRC12BitdNXDN(uint8_t * BufferIn, uint32_t BitLength)
  * X^6 + (1X^5 + 0X^4 + 0X^3 + 1X^2 + 1X^1 + 1X^0)
  * => Polynomial = 0b100111 = 0x27
  */
-uint8_t CRC6BitdNXDN(uint8_t * BufferIn, uint32_t BitLength)
+uint8_t CRC6BitNXDN(uint8_t * BufferIn, uint32_t BitLength)
 {
   uint8_t  CRC = 0x3F;      /* Initial value = All bit to '1' (only 6 LSBit are used) */
   uint8_t  Polynome = 0x27; /* X^6 + X^5 + X^2 + X + 1 */
@@ -813,7 +953,7 @@ uint8_t CRC6BitdNXDN(uint8_t * BufferIn, uint32_t BitLength)
   }
 
   return CRC;
-} /* End CRC6BitdNXDN() */
+} /* End CRC6BitNXDN() */
 
 
 /* Scrambler used for NXDN transmission (different of the

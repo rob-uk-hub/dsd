@@ -216,16 +216,16 @@ void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b0101110: /* UDCH Transmission */
     case 0b0101111: /* UDCH Transmission */
     {
-      printf("- RTCH - UDCH Transmission\n");
-      SkipEntireFrameFlag = 1;
+      printf("- RTCH - UDCH Transmission - ");
+      ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
 
     case 0b0101000: /* FACCH2 Transmission */
     case 0b0101001: /* FACCH2 Transmission */
     {
-      printf("- RTCH - FACCH2 Transmission\n");
-      SkipEntireFrameFlag = 1;
+      printf("- RTCH - FACCH2 Transmission - ");
+      ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
     default:
@@ -309,16 +309,16 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b1001110: /* UDCH Transmission */
     case 0b1001111: /* UDCH Transmission */
     {
-      printf("- RDCH - UDCH Transmission\n");
-      SkipEntireFrameFlag = 1;
+      printf("- RDCH - UDCH Transmission - ");
+      ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
 
     case 0b1001000: /* FACCH2 Transmission */
     case 0b1001001: /* FACCH2 Transmission */
     {
-      printf("- RDCH - FACCH2 Transmission\n");
-      SkipEntireFrameFlag = 1;
+      printf("- RDCH - FACCH2 Transmission - ");
+      ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
 
@@ -396,15 +396,15 @@ void ProcessNxdnRTCH_C_Frame(dsd_opts * opts, dsd_state * state, uint8_t Inverte
 
     case 0b1101111: /* UDCH Transmission */
     {
-      printf("- RTCH_C - UDCH Transmission\n");
-      SkipEntireFrameFlag = 1;
+      printf("- RTCH_C - UDCH Transmission - ");
+      ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
 
     case 0b1101001: /* FACCH2 Transmission */
     {
-      printf("- RTCH_C - FACCH2 Transmission\n");
-      SkipEntireFrameFlag = 1;
+      printf("- RTCH_C - FACCH2 Transmission - ");
+      ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
 
@@ -678,6 +678,87 @@ void ProcessNXDNFacch1Data (dsd_opts * opts, dsd_state * state, uint8_t Inverted
     for(i = 0; i < 4; i++) state->NxdnSacchRawPart[i].CrcIsGood = 0;
   }
 } /* End ProcessNXDNFacch1Data() */
+
+
+
+
+/*
+ * @brief : This function decodes an NXDN data frame with UDCH/FACCH2 fields
+ *
+ * @param opts : Options
+ *
+ * @param state : State
+ *
+ * @param Inverted : 1 = Inverted frame ; 0 = Normal frame
+ *
+ * @return None
+ *
+ */
+void ProcessNXDNUdchData (dsd_opts * opts, dsd_state * state, uint8_t Inverted)
+{
+  int i, dibit = 0;
+  unsigned char facch2_raw[348] = {0};
+  unsigned char facch2_decoded[203] = {0}; /* 184 bits + 15 bits CRC + 4 bits "Tail" (set to "0") */
+  unsigned char *pr;
+  uint8_t Facch2CrcIsGood = 0;
+  uint8_t StructureField = 0;
+  uint8_t RAN = 0;
+
+  /* Remove compiler warning */
+  UNUSED_VARIABLE(dibit);
+  UNUSED_VARIABLE(Inverted);
+  UNUSED_VARIABLE(StructureField);
+
+  if (opts->errorbars == 1)
+  {
+    printf ("DATA  - ");
+  }
+
+  /* Start pseudo-random NXDN sequence after
+   * LITCH = 16 bit = 8 dibit
+   * ==> Index 8 */
+  pr = (unsigned char *)(&nxdnpr[8]);
+  for (i = 0; i < 174; i++)
+  {
+    dibit = getDibit (opts, state);
+
+    /* Store and de-interleave directly SACCH bits */
+    facch2_raw[(2*i)]   = ((*pr) & 1) ^ (1 & (dibit >> 1));  // bit 1
+    facch2_raw[(2*i)+1] = (1 & dibit);               // bit 0
+    pr++;
+#ifdef NXDN_DUMP
+    printf ("%c", dibit + 48);
+#endif
+  }
+#ifdef NXDN_DUMP
+  printf (" ");
+#endif
+
+  /* Extract the UDCH/FACCH2 content */
+  Facch2CrcIsGood = NXDN_UDCH_decode(facch2_raw, facch2_decoded);
+
+  state->NxdnFacch2RawPart.CrcIsGood = Facch2CrcIsGood;
+  memcpy(state->NxdnFacch2RawPart.Data, facch2_decoded, 184);
+
+  StructureField = (facch2_decoded[0]<<1 | facch2_decoded[1]<<0) & 0x03; /* Compute the Structure Field (remove 2 first bits of the SR Information in the FACCH2) */
+  RAN = (facch2_decoded[2]<<5 | facch2_decoded[3]<<4 | facch2_decoded[4]<<3 | facch2_decoded[5]<<2 | facch2_decoded[6]<<1 | facch2_decoded[7]<<0) & 0x3F; /* Compute the RAN (6 last bits of the SR Information in the FACCH2) */
+
+  printf("RAN=%02d ", RAN);
+  if(Facch2CrcIsGood) printf("   (OK)   - ");
+  else printf("(CRC ERR) - ");
+
+  /* This frame is an FACCH2 frame */
+  printf("FACCH2 - ");
+
+  if(Facch2CrcIsGood) printf("UDCH/FACCH2 CRC is good - ");
+  else printf("UDCH/FACCH2 CRC is bad - ");
+
+  if (opts->errorbars == 1)
+  {
+    printf ("\n");
+  }
+} /* End ProcessNXDNUdchData() */
+
 
 
 

@@ -99,6 +99,9 @@ void noCarrier (dsd_opts * opts, dsd_state * state)
   /* Re-init the FACCH1 structure */
   memset(state->NxdnFacch1RawPart, 0, sizeof(state->NxdnFacch1RawPart));
 
+  /* Re-init the FACCH2 structure */
+  memset(&state->NxdnFacch2RawPart, 0, sizeof(state->NxdnFacch2RawPart));
+
   // TODO : Is it really necessary ???
   memset(&state->NxdnElementsContent, 0, sizeof(state->NxdnElementsContent));
 
@@ -313,6 +316,7 @@ void initState (dsd_state * state)
 
   memset(state->NxdnSacchRawPart, 0, sizeof(state->NxdnSacchRawPart));
   memset(state->NxdnFacch1RawPart, 0, sizeof(state->NxdnFacch1RawPart));
+  memset(&state->NxdnFacch2RawPart, 0, sizeof(state->NxdnFacch2RawPart));
   memset(&state->NxdnElementsContent, 0, sizeof(state->NxdnElementsContent));
   memset(&state->NxdnLich, 0, sizeof(state->NxdnLich));
 
