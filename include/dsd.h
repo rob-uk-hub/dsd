@@ -86,7 +86,7 @@ typedef unsigned char bool;
 /*
  * global variables
  */
-int exitflag;
+extern int exitflag;
 
 
 /*

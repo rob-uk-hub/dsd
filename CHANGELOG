@@ -1,3 +1,23 @@
+1.8.4-dev
+  New features: None
+
+  Fixed bugs :
+    GCC V10.2.0 was not able to build correctly DSD (error during linking step due to a global
+    variable declared in a header file), fixed now.
+    Note : This bug didn't occured with previous GCC versions.
+
+1.8.3-dev
+1.8.2-dev
+1.8.1-dev
+  New features:
+    Now decode all NXDN SYNC patterns with the correct LICH
+    Implementing the following NXDN frame decoding : VCH, FACCH1, FACCH1, UDCH.
+
+  Known Issues :
+    The NXDN SYNC pattern is very small (10 symbols / 20 bits), so there are some false
+    positive detection.
+    Short NXDN/dPMR transmissions could be not correclty detected.
+
 1.8.0-dev
   New features:
     Several new sync types for existing formats now recognized:
