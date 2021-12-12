@@ -13,10 +13,10 @@ void processP25lcw (dsd_opts * opts, dsd_state * state, char *lcformat, char *mf
 
   if (opts->p25lc == 1)
   {
-    printf ("lcformat: %s mfid: %s lcinfo: %s ", lcformat, mfid, lcinfo);
+    fprintf(stderr, "lcformat: %s mfid: %s lcinfo: %s ", lcformat, mfid, lcinfo);
     if (opts->p25tg == 0)
     {
-      printf ("\n");
+      fprintf(stderr, "\n");
     }
   }
 
@@ -47,12 +47,12 @@ void processP25lcw (dsd_opts * opts, dsd_state * state, char *lcformat, char *mf
     }
     if (opts->p25tg == 1)
     {
-      printf ("tg: %li ", talkgroup);
+      fprintf(stderr, "tg: %li ", talkgroup);
     }
 
     if (opts->p25tg == 1)
     {
-      printf ("tg: %li ", talkgroup);
+      fprintf(stderr, "tg: %li ", talkgroup);
 
       // the remaining 3 appear to be other active tg's on the system
       j = 0;
@@ -67,7 +67,7 @@ void processP25lcw (dsd_opts * opts, dsd_state * state, char *lcformat, char *mf
       tmpstr[15] = 48;
       tmpstr[16] = 0;
       talkgroup = strtol (tmpstr, NULL, 2);
-      printf ("%li ", talkgroup);
+      fprintf(stderr, "%li ", talkgroup);
       j = 0;
       for (i = 16; i < 28; i++)
       {
@@ -80,7 +80,7 @@ void processP25lcw (dsd_opts * opts, dsd_state * state, char *lcformat, char *mf
       tmpstr[15] = 48;
       tmpstr[16] = 0;
       talkgroup = strtol (tmpstr, NULL, 2);
-      printf ("%li ", talkgroup);
+      fprintf(stderr, "%li ", talkgroup);
       j = 0;
       for (i = 4; i < 16; i++)
       {
@@ -93,7 +93,7 @@ void processP25lcw (dsd_opts * opts, dsd_state * state, char *lcformat, char *mf
       tmpstr[15] = 48;
       tmpstr[16] = 0;
       talkgroup = strtol (tmpstr, NULL, 2);
-      printf ("%li\n", talkgroup);
+      fprintf(stderr, "%li\n", talkgroup);
     }
   }
 
@@ -137,7 +137,7 @@ void processP25lcw (dsd_opts * opts, dsd_state * state, char *lcformat, char *mf
     }
     if (opts->p25tg == 1)
     {
-      printf ("tg: %li ", talkgroup);
+      fprintf(stderr, "tg: %li ", talkgroup);
     }
 
     j = 0;
@@ -151,11 +151,11 @@ void processP25lcw (dsd_opts * opts, dsd_state * state, char *lcformat, char *mf
     state->lastsrc = source;
     if (opts->p25tg == 1)
     {
-      printf ("src: %li emr: %c\n", source, lcinfo[0]);
+      fprintf(stderr, "src: %li emr: %c\n", source, lcinfo[0]);
     }
   }
   else if ((opts->p25tg == 1) && (opts->p25lc == 1))
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 }

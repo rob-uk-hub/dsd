@@ -30,18 +30,18 @@ void printFrameInfo (dsd_opts * opts, dsd_state * state)
   level = (int) state->max / 164;
   if (opts->verbose > 0)
   {
-    printf ("inlvl: %2i%% ", level);
+    fprintf(stderr, "inlvl: %2i%% ", level);
   }
   if (state->nac != 0)
   {
-    printf ("nac: %4X ", state->nac);
+    fprintf(stderr, "nac: %4X ", state->nac);
   }
 
   if (opts->verbose > 1)
   {
-    printf ("src: %8i ", state->lastsrc);
+    fprintf(stderr, "src: %8i ", state->lastsrc);
   }
-  printf ("tg: %5i ", state->lasttg);
+  fprintf(stderr, "tg: %5i ", state->lasttg);
 }
 
 void processFrame (dsd_opts * opts, dsd_state * state)
@@ -121,7 +121,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->verbose > 0)
       {
         level = (int) state->max / 164;
-        printf ("inlvl: %2i%% ", level);
+        fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
     state->nac = 0;
@@ -129,7 +129,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
     {
       openMbeOutFile (opts, state);
     }
-    sprintf (state->fsubtype, " VOICE        ");
+    sprintf(state->fsubtype, " VOICE        ");
     processNXDNVoice (opts, state);
     return;
   }
@@ -144,11 +144,11 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->verbose > 0)
       {
         level = (int) state->max / 164;
-        printf ("inlvl: %2i%% ", level);
+        fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
 
-    //printf("NXDN Sync only\n");
+    //fprintf(stderr, "NXDN Sync only\n");
 
     ProcessNXDNFrame (opts, state, 0);
     return;
@@ -164,11 +164,11 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->verbose > 0)
       {
         level = (int) state->max / 164;
-        printf ("inlvl: %2i%% ", level);
+        fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
 
-    //printf("NXDN Sync only\n");
+    //fprintf(stderr, "NXDN Sync only\n");
 
     ProcessNXDNFrame (opts, state, 1);
     return;
@@ -184,7 +184,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->verbose > 0)
       {
         level = (int) state->max / 164;
-        printf ("inlvl: %2i%% ", level);
+        fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
     state->nac = 0;
@@ -192,7 +192,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
     {
       openMbeOutFile (opts, state);
     }
-    sprintf (state->fsubtype, " DATA         ");
+    sprintf(state->fsubtype, " DATA         ");
     processNXDNData (opts, state);
     return;
   }
@@ -206,7 +206,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->verbose > 0)
       {
         level = (int) state->max / 164;
-        printf ("inlvl: %2i%% ", level);
+        fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
     state->nac = 0;
@@ -214,7 +214,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
     {
       openMbeOutFile (opts, state);
     }
-    sprintf (state->fsubtype, " VOICE        ");
+    sprintf(state->fsubtype, " VOICE        ");
     processDSTAR (opts, state);
     return;
   }
@@ -228,7 +228,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->verbose > 0)
       {
         level = (int) state->max / 164;
-        printf ("inlvl: %2i%% ", level);
+        fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
     state->nac = 0;
@@ -236,7 +236,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
     {
       openMbeOutFile (opts, state);
     }
-    sprintf (state->fsubtype, " DATA         ");
+    sprintf(state->fsubtype, " DATA         ");
     processDSTAR_HD (opts, state);
     return;
   }
@@ -251,7 +251,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->verbose > 0)
       {
         level = (int) state->max / 164;
-        printf ("inlvl: %2i%% ", level);
+        fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
     if ((state->synctype == 11) || (state->synctype == 12))
@@ -260,7 +260,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       {
         openMbeOutFile (opts, state);
       }
-      sprintf (state->fsubtype, " VOICE        ");
+      sprintf(state->fsubtype, " VOICE        ");
       processDMRvoice (opts, state);
     }
     else
@@ -284,7 +284,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       {
         openMbeOutFile (opts, state);
       }
-      sprintf (state->fsubtype, " VOICE        ");
+      sprintf(state->fsubtype, " VOICE        ");
       processX2TDMAvoice (opts, state);
     }
     else
@@ -305,26 +305,26 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->verbose > 0)
       {
         level = (int) state->max / 164;
-        printf ("inlvl: %2i%% ", level);
+        fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
     if ((opts->mbe_out_dir[0] != 0) && (opts->mbe_out_f == NULL))
     {
       openMbeOutFile (opts, state);
     }
-    sprintf (state->fsubtype, " VOICE        ");
+    sprintf(state->fsubtype, " VOICE        ");
     processProVoice (opts, state);
     return;
   }
   else if ((state->synctype == 20) || (state->synctype == 24))
   {
     /* dPMR Frame Sync 1 */
-    printf("dPMR Frame sync 1 ");
+    fprintf(stderr, "dPMR Frame sync 1 ");
   }
   else if ((state->synctype == 21) || (state->synctype == 25))
   {
     /* dPMR Frame Sync 2 */
-    printf("dPMR Frame sync 2 ");
+    fprintf(stderr, "dPMR Frame sync 2 ");
     {
       state->rf_mod = GFSK_MODE;
       state->nac = 0;
@@ -335,7 +335,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
         if (opts->verbose > 0)
         {
           level = (int) state->max / 164;
-          printf ("inlvl: %2i%% ", level);
+          fprintf(stderr, "inlvl: %2i%% ", level);
         }
       }
       state->nac = 0;
@@ -343,7 +343,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       {
         openMbeOutFile (opts, state);
       }
-      sprintf (state->fsubtype, " VOICE        ");
+      sprintf(state->fsubtype, " VOICE        ");
       processdPMRvoice (opts, state);
       return;
     }
@@ -351,12 +351,12 @@ void processFrame (dsd_opts * opts, dsd_state * state)
   else if ((state->synctype == 22) || (state->synctype == 26))
   {
     /* dPMR Frame Sync 3 */
-    printf("dPMR Frame sync 3 ");
+    fprintf(stderr, "dPMR Frame sync 3 ");
   }
   else if ((state->synctype == 23) || (state->synctype == 27))
   {
     /* dPMR Frame Sync 4 */
-    printf("dPMR Frame sync 4 ");
+    fprintf(stderr, "dPMR Frame sync 4 ");
   }
   else
     {
@@ -431,14 +431,14 @@ void processFrame (dsd_opts * opts, dsd_state * state)
           }
           if (strcmp(new_duid, duid) != 0) {
               // DUID fixed by error correction
-              //printf("Fixing DUID %s -> %s\n", duid, new_duid);
+              //fprintf(stderr, "Fixing DUID %s -> %s\n", duid, new_duid);
               duid[0] = new_duid[0];
               duid[1] = new_duid[1];
               state->debug_header_errors++;
           }
       } else {
           // Check of NID failed and unable to recover its value
-          //printf("NID error\n");
+          //fprintf(stderr, "NID error\n");
           duid[0] = 'E';
           duid[1] = 'E';
           state->debug_header_critical_errors++;
@@ -451,7 +451,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" HDU\n");
+          fprintf(stderr, " HDU\n");
         }
       if (opts->mbe_out_dir[0] != 0)
         {
@@ -460,7 +460,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
         }
       mbe_initMbeParms (state->cur_mp, state->prev_mp, state->prev_mp_enhanced);
       state->lastp25type = 2;
-      sprintf (state->fsubtype, " HDU          ");
+      sprintf(state->fsubtype, " HDU          ");
       processHDU (opts, state);
     }
   else if (strcmp (duid, "11") == 0)
@@ -469,7 +469,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" LDU1  ");
+          fprintf(stderr, " LDU1  ");
         }
       if (opts->mbe_out_dir[0] != 0)
         {
@@ -479,7 +479,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
             }
         }
       state->lastp25type = 1;
-      sprintf (state->fsubtype, " LDU1         ");
+      sprintf(state->fsubtype, " LDU1         ");
       state->numtdulc = 0;
       processLDU1 (opts, state);
     }
@@ -491,17 +491,17 @@ void processFrame (dsd_opts * opts, dsd_state * state)
           if (opts->errorbars == 1)
             {
               printFrameInfo (opts, state);
-              printf (" Ignoring LDU2 not preceeded by LDU1\n");
+              fprintf(stderr, " Ignoring LDU2 not preceeded by LDU1\n");
             }
           state->lastp25type = 0;
-          sprintf (state->fsubtype, "              ");
+          sprintf(state->fsubtype, "              ");
         }
       else
         {
           if (opts->errorbars == 1)
             {
               printFrameInfo (opts, state);
-              printf (" LDU2  ");
+              fprintf(stderr, " LDU2  ");
             }
           if (opts->mbe_out_dir[0] != 0)
             {
@@ -511,7 +511,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
                 }
             }
           state->lastp25type = 2;
-          sprintf (state->fsubtype, " LDU2         ");
+          sprintf(state->fsubtype, " LDU2         ");
           state->numtdulc = 0;
           processLDU2 (opts, state);
         }
@@ -522,7 +522,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" TDULC\n");
+          fprintf(stderr, " TDULC\n");
         }
       if (opts->mbe_out_dir[0] != 0)
         {
@@ -533,7 +533,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       state->lastsrc = 0;
       state->lastp25type = 0;
       state->err_str[0] = 0;
-      sprintf (state->fsubtype, " TDULC        ");
+      sprintf(state->fsubtype, " TDULC        ");
       state->numtdulc++;
       if ((opts->resume > 0) && (state->numtdulc > opts->resume))
         {
@@ -548,7 +548,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" TDU\n");
+          fprintf(stderr, " TDU\n");
         }
       if (opts->mbe_out_dir[0] != 0)
         {
@@ -559,7 +559,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       state->lastsrc = 0;
       state->lastp25type = 0;
       state->err_str[0] = 0;
-      sprintf (state->fsubtype, " TDU          ");
+      sprintf(state->fsubtype, " TDU          ");
 
       processTDU (opts, state);
     }
@@ -568,7 +568,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" TSDU\n");
+          fprintf(stderr, " TSDU\n");
         }
       if (opts->resume > 0)
         {
@@ -577,7 +577,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       state->lasttg = 0;
       state->lastsrc = 0;
       state->lastp25type = 3;
-      sprintf (state->fsubtype, " TSDU         ");
+      sprintf(state->fsubtype, " TSDU         ");
 
       // Now processing NID
 
@@ -588,7 +588,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" PDU\n");
+          fprintf(stderr, " PDU\n");
         }
       if (opts->resume > 0)
         {
@@ -602,7 +602,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
             }
         }
       state->lastp25type = 4;
-      sprintf (state->fsubtype, " PDU          ");
+      sprintf(state->fsubtype, " PDU          ");
     }
   // try to guess based on previous frame if unknown type
   else if (state->lastp25type == 1)
@@ -610,7 +610,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf ("(LDU2) ");
+          fprintf(stderr, "(LDU2) ");
         }
       if (opts->mbe_out_dir[0] != 0)
         {
@@ -622,7 +622,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       //state->lastp25type = 0;
       // Guess that the state is LDU2
       state->lastp25type = 2;
-      sprintf (state->fsubtype, "(LDU2)        ");
+      sprintf(state->fsubtype, "(LDU2)        ");
       state->numtdulc = 0;
       processLDU2 (opts, state);
     }
@@ -631,7 +631,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf ("(LDU1) ");
+          fprintf(stderr, "(LDU1) ");
         }
       if (opts->mbe_out_dir[0] != 0)
         {
@@ -643,7 +643,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       //state->lastp25type = 0;
       // Guess that the state is LDU1
       state->lastp25type = 1;
-      sprintf (state->fsubtype, "(LDU1)        ");
+      sprintf(state->fsubtype, "(LDU1)        ");
       state->numtdulc = 0;
       processLDU1 (opts, state);
     }
@@ -652,12 +652,12 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" (TSDU)\n");
+          fprintf(stderr, " (TSDU)\n");
         }
       //state->lastp25type = 0;
       // Guess that the state is TSDU
       state->lastp25type = 3;
-      sprintf (state->fsubtype, "(TSDU)        ");
+      sprintf(state->fsubtype, "(TSDU)        ");
 
       // Now processing NID
 
@@ -668,18 +668,18 @@ void processFrame (dsd_opts * opts, dsd_state * state)
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" (PDU)\n");
+          fprintf(stderr, " (PDU)\n");
         }
       state->lastp25type = 0;
     }
   else
     {
       state->lastp25type = 0;
-      sprintf (state->fsubtype, "              ");
+      sprintf(state->fsubtype, "              ");
       if (opts->errorbars == 1)
         {
           printFrameInfo (opts, state);
-          printf (" duid:%s *Unknown DUID*\n", duid);
+          fprintf(stderr, " duid:%s *Unknown DUID*\n", duid);
         }
     }
 

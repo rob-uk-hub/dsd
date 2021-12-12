@@ -170,7 +170,7 @@ static void correct_golay_dibits_6(char* corrected_hex_data, int hex_count, Anal
 #ifdef HEURISTICS_DEBUG
       if (analog_signal_array[analog_signal_index].dibit != dibit)
       {
-        printf("HDU data word corrected from %i to %i, analog value %i\n",
+        fprintf(stderr, "HDU data word corrected from %i to %i, analog value %i\n",
             analog_signal_array[analog_signal_index].dibit, dibit, analog_signal_array[analog_signal_index].value);
       }
 #endif
@@ -192,7 +192,7 @@ static void correct_golay_dibits_6(char* corrected_hex_data, int hex_count, Anal
 #ifdef HEURISTICS_DEBUG
       if (analog_signal_array[analog_signal_index].dibit != dibit)
       {
-        printf("HDU parity corrected from %i to %i, analog value %i\n",
+        fprintf(stderr, "HDU parity corrected from %i to %i, analog value %i\n",
             analog_signal_array[analog_signal_index].dibit, dibit, analog_signal_array[analog_signal_index].value);
       }
 #endif
@@ -451,14 +451,14 @@ void processHDU(dsd_opts* opts, dsd_state* state)
   {
     algidhex = strtol (algid, NULL, 2);
     kidhex = strtol (kid, NULL, 2);
-    printf ("mi: %s algid: $%x kid: $%x\n", mi, algidhex, kidhex);
+    fprintf(stderr, "mi: %s algid: $%x kid: $%x\n", mi, algidhex, kidhex);
   }
   if (opts->p25lc == 1)
   {
-    printf ("mfid: %s tgid: %s ", mfid, tgid);
+    fprintf(stderr, "mfid: %s tgid: %s ", mfid, tgid);
     if (opts->p25tg == 0)
     {
-      printf ("\n");
+      fprintf(stderr, "\n");
     }
   }
 
@@ -500,6 +500,6 @@ void processHDU(dsd_opts* opts, dsd_state* state)
   }
   if (opts->p25tg == 1)
   {
-    printf ("tg: %li\n", talkgroup);
+    fprintf(stderr, "tg: %li\n", talkgroup);
   }
 }

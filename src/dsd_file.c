@@ -134,7 +134,7 @@ void openMbeInFile (dsd_opts * opts, dsd_state * state)
   opts->mbe_in_f = fopen (opts->mbe_in_file, "ro");
   if (opts->mbe_in_f == NULL)
   {
-    printf ("Error: could not open %s\n", opts->mbe_in_file);
+    fprintf(stderr, "Error: could not open %s\n", opts->mbe_in_file);
   }
 
   // read cookie
@@ -154,7 +154,7 @@ void openMbeInFile (dsd_opts * opts, dsd_state * state)
   else
   {
     state->mbe_file_type = -1;
-    printf ("Error - unrecognized file type\n");
+    fprintf(stderr, "Error - unrecognized file type\n");
   }
 
 }
@@ -175,12 +175,12 @@ void closeMbeOutFile (dsd_opts * opts, dsd_state * state)
   {
     if ((state->synctype == 0) || (state->synctype == 1) || (state->synctype == 14) || (state->synctype == 15))
     {
-      sprintf (ext, ".imb");
+      sprintf(ext, ".imb");
       strptime (opts->mbe_out_file, "%s.imb", &timep);
     }
     else
     {
-      sprintf (ext, ".amb");
+      sprintf(ext, ".amb");
       strptime (opts->mbe_out_file, "%s.amb", &timep);
     }
 
@@ -207,12 +207,12 @@ void closeMbeOutFile (dsd_opts * opts, dsd_state * state)
     fclose (opts->mbe_out_f);
     opts->mbe_out_f = NULL;
     strftime (datestr, 31, "%Y-%m-%d-%H%M%S", &timep);
-    sprintf (newfilename, "nac%X-%s-tg%i%s", state->nac, datestr, talkgroup, ext);
-    sprintf (new_path, "%s%s", opts->mbe_out_dir, newfilename);
+    sprintf(newfilename, "nac%X-%s-tg%i%s", state->nac, datestr, talkgroup, ext);
+    sprintf(new_path, "%s%s", opts->mbe_out_dir, newfilename);
 #ifdef _WIN32
-    sprintf (shell, "move %s %s", opts->mbe_out_path, new_path);
+    sprintf(shell, "move %s %s", opts->mbe_out_path, new_path);
 #else
-    sprintf (shell, "mv %s %s", opts->mbe_out_path, new_path);
+    sprintf(shell, "mv %s %s", opts->mbe_out_path, new_path);
 #endif
     result = system (shell);
 
@@ -236,11 +236,11 @@ void openMbeOutFile (dsd_opts * opts, dsd_state * state)
 
   if ((state->synctype == 0) || (state->synctype == 1) || (state->synctype == 14) || (state->synctype == 15))
   {
-    sprintf (ext, ".imb");
+    sprintf(ext, ".imb");
   }
   else
   {
-    sprintf (ext, ".amb");
+    sprintf(ext, ".amb");
   }
 
   //  reset talkgroup id buffer
@@ -255,18 +255,18 @@ void openMbeOutFile (dsd_opts * opts, dsd_state * state)
   state->tgcount = 0;
 
   gettimeofday (&tv, NULL);
-  sprintf (opts->mbe_out_file, "%i%s", (int) tv.tv_sec, ext);
+  sprintf(opts->mbe_out_file, "%i%s", (int) tv.tv_sec, ext);
 
   sprintf(opts->mbe_out_path, "%s%s", opts->mbe_out_dir, opts->mbe_out_file);
 
   opts->mbe_out_f = fopen (opts->mbe_out_path, "w");
   if (opts->mbe_out_f == NULL)
   {
-    printf ("Error, couldn't open %s\n", opts->mbe_out_path);
+    fprintf(stderr, "Error, couldn't open %s\n", opts->mbe_out_path);
   }
 
   // write magic
-  fprintf (opts->mbe_out_f, "%s", ext);
+  fprintf(opts->mbe_out_f, "%s", ext);
 
   fflush (opts->mbe_out_f);
 }
@@ -285,7 +285,7 @@ void openWavOutFile (dsd_opts * opts, dsd_state * state)
 
   if (opts->wav_out_f == NULL)
   {
-    printf ("Error - could not open wav output file %s\n", opts->wav_out_file);
+    fprintf(stderr, "Error - could not open wav output file %s\n", opts->wav_out_file);
     return;
   }
 
@@ -307,15 +307,15 @@ void closeWavOutFile (dsd_opts * opts, dsd_state * state)
       rewind (opts->wav_out_f);
       length = state->wav_out_bytes;
 
-      fprintf (opts->wav_out_f, "RIFF");
+      fprintf(opts->wav_out_f, "RIFF");
       // total length
       fputc (((36 + length) & 0xff), opts->≈≈);
       fputc ((((36 + length) >> 8) & 0xff), opts->wav_out_f);
       fputc ((((36 + length) >> 16) & 0xff), opts->wav_out_f);
       fputc ((((36 + length) >> 24) & 0xff), opts->wav_out_f);
 
-      fprintf (opts->wav_out_f, "WAVE");
-      fprintf (opts->wav_out_f, "fmt ");
+      fprintf(opts->wav_out_f, "WAVE");
+      fprintf(opts->wav_out_f, "fmt ");
 
       // length of format chunk
       fputc (16, opts->wav_out_f);
@@ -352,7 +352,7 @@ void closeWavOutFile (dsd_opts * opts, dsd_state * state)
       fputc (0, opts->wav_out_f);
 
       // data chunk header
-      fprintf (opts->wav_out_f, "data");
+      fprintf(opts->wav_out_f, "data");
 
       // length of data
       fputc ((length & 0xff), opts->wav_out_f);

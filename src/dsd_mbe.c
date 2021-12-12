@@ -30,10 +30,10 @@ playMbeFiles (dsd_opts * opts, dsd_state * state, int argc, char **argv)
 
   for (i = state->optind; i < argc; i++)
     {
-      sprintf (opts->mbe_in_file, "%s", argv[i]);
+      sprintf(opts->mbe_in_file, "%s", argv[i]);
       openMbeInFile (opts, state);
       mbe_initMbeParms (state->cur_mp, state->prev_mp, state->prev_mp_enhanced);
-      printf ("playing %s\n", opts->mbe_in_file);
+      fprintf(stderr, "playing %s\n", opts->mbe_in_file);
       while (feof (opts->mbe_in_f) == 0)
         {
           if (state->mbe_file_type == 0)
@@ -137,7 +137,7 @@ processMbeFrame (dsd_opts * opts, dsd_state * state, char imbe_fr[8][23], char a
 
   if (opts->errorbars == 1)
     {
-      printf ("%s", state->err_str);
+      fprintf(stderr, "%s", state->err_str);
     }
 
   state->debug_audio_errors += state->errs2;
@@ -252,7 +252,7 @@ void processMbeFrameEncrypted (dsd_opts * opts, dsd_state * state, char imbe_fr[
 
   if (opts->errorbars == 1)
     {
-      printf ("%s", state->err_str);
+      fprintf(stderr, "%s", state->err_str);
     }
 
   state->debug_audio_errors += state->errs2;

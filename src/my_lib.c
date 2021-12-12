@@ -150,14 +150,14 @@ void printDMRRawVoiceFrame (dsd_opts * opts, dsd_state * state)
     if(state->printDMRRawVoiceFrameHex)
     {
       /* Print the voice frame data number */
-      printf("%d/6 Raw Voice Frame = ", Frame + 1);
+      fprintf(stderr, "%d/6 Raw Voice Frame = ", Frame + 1);
 
       /* Print the 264 bit of the voice frame (total 33 bytes) */
       for(i = 0, j = 0; i < (264/8); i++)
       {
         Byte = 0;
 
-        if(i != 0) printf(" - "); // Print a "-" between each byte
+        if(i != 0) fprintf(stderr, " - "); // Print a "-" between each byte
 
         if(SuperFrameBuffer[Frame][j++]) Byte |= 0x80;
         if(SuperFrameBuffer[Frame][j++]) Byte |= 0x40;
@@ -168,40 +168,40 @@ void printDMRRawVoiceFrame (dsd_opts * opts, dsd_state * state)
         if(SuperFrameBuffer[Frame][j++]) Byte |= 0x02;
         if(SuperFrameBuffer[Frame][j++]) Byte |= 0x01;
 
-        printf("0x%02X", Byte & 0xFF); // Print the byte
+        fprintf(stderr, "0x%02X", Byte & 0xFF); // Print the byte
       }
-      printf("\n");
+      fprintf(stderr, "\n");
     }
 
     /* Check if the output format is binary */
     if(state->printDMRRawVoiceFrameBin)
     {
       /* Print the voice frame data number */
-      printf("%d/6 Raw Voice Frame = ", j + 1);
+      fprintf(stderr, "%d/6 Raw Voice Frame = ", j + 1);
 
       /* Print all 264 bit of the frame (total 33 bytes) */
       for(i = 0, j = 0; i < (264 / 8); i++)
       {
-        if(i != 0) printf(" - "); // Print a "-" between each byte
+        if(i != 0) fprintf(stderr, " - "); // Print a "-" between each byte
 
-        if(SuperFrameBuffer[Frame][j++]) printf("1");
-        else printf("0");
-        if(SuperFrameBuffer[Frame][j++]) printf("1");
-        else printf("0");
-        if(SuperFrameBuffer[Frame][j++]) printf("1");
-        else printf("0");
-        if(SuperFrameBuffer[Frame][j++]) printf("1");
-        else printf("0");
-        if(SuperFrameBuffer[Frame][j++]) printf("1");
-        else printf("0");
-        if(SuperFrameBuffer[Frame][j++]) printf("1");
-        else printf("0");
-        if(SuperFrameBuffer[Frame][j++]) printf("1");
-        else printf("0");
-        if(SuperFrameBuffer[Frame][j++]) printf("1");
-        else printf("0");
+        if(SuperFrameBuffer[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(SuperFrameBuffer[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(SuperFrameBuffer[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(SuperFrameBuffer[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(SuperFrameBuffer[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(SuperFrameBuffer[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(SuperFrameBuffer[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(SuperFrameBuffer[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
       }
-      printf("\n");
+      fprintf(stderr, "\n");
     }
   }
 } /* End printDMRRawVoiceFrame() */
@@ -280,7 +280,7 @@ void printDMRAmbeVoiceSample(dsd_opts * opts, dsd_state * state)
 
   if((state->printDMRAmbeVoiceSampleHex) || (state->printDMRAmbeVoiceSampleBin))
   {
-    printf("\n");
+    fprintf(stderr, "\n");
 
     /* A voice superframe contains 6 voice frames */
     for(Frame = 0; Frame < 6; Frame++)
@@ -289,12 +289,12 @@ void printDMRAmbeVoiceSample(dsd_opts * opts, dsd_state * state)
       if(state->printDMRAmbeVoiceSampleHex)
       {
         /* Print the voice frame data number */
-        printf("%d/6 AMBE Voice Frame :\n", Frame + 1);
+        fprintf(stderr, "%d/6 AMBE Voice Frame :\n", Frame + 1);
 
         /* 3 AMBE Sample of 49 bit each */
         for(i = 0; i < 3; i++)
         {
-          printf("E1 = %d, E2 = %d, AMBE Sample #%d = ",
+          fprintf(stderr, "E1 = %d, E2 = %d, AMBE Sample #%d = ",
                  TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].errs1[i],
                  TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].errs2[i],
                  i + 1);
@@ -310,60 +310,60 @@ void printDMRAmbeVoiceSample(dsd_opts * opts, dsd_state * state)
             if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) Byte |= 0x04;
             if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) Byte |= 0x02;
             if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) Byte |= 0x01;
-            printf("0x%02X - ", Byte & 0xFF); // Print the byte
+            fprintf(stderr, "0x%02X - ", Byte & 0xFF); // Print the byte
           }
 
           /* Print the 49th bit */
           Byte = 0;
           if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][48]) Byte |= 0x01;
-          printf("0x%02X\n", Byte & 0xFF); // Print the byte
+          fprintf(stderr, "0x%02X\n", Byte & 0xFF); // Print the byte
         }
 
-        //printf("\n");
+        //fprintf(stderr, "\n");
       } /* End if(state->printDMRAmbeVoiceSampleHex) */
 
       /* Check if the output format is binary */
       if(state->printDMRAmbeVoiceSampleBin)
       {
         /* Print the voice frame data number */
-        printf("%d/6 AMBE Voice Frame = ", Frame + 1);
+        fprintf(stderr, "%d/6 AMBE Voice Frame = ", Frame + 1);
 
         /* 3 AMBE Sample of 49 bit each */
         for(i = 0; i < 3; i++)
         {
-          printf("E1 = %d, E2 = %d, AMBE Sample #%d = ",
+          fprintf(stderr, "E1 = %d, E2 = %d, AMBE Sample #%d = ",
                  TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].errs1[i],
                  TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].errs2[i],
                  i + 1);
 
           for(j = 0; j < 48; )
           {
-            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) printf("1");
-            else printf("0");
-            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) printf("1");
-            else printf("0");
-            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) printf("1");
-            else printf("0");
-            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) printf("1");
-            else printf("0");
-            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) printf("1");
-            else printf("0");
-            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) printf("1");
-            else printf("0");
-            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) printf("1");
-            else printf("0");
-            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) printf("1");
-            else printf("0");
-            printf(" - "); // Print a "-"
+            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) fprintf(stderr, "1");
+            else fprintf(stderr, "0");
+            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) fprintf(stderr, "1");
+            else fprintf(stderr, "0");
+            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) fprintf(stderr, "1");
+            else fprintf(stderr, "0");
+            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) fprintf(stderr, "1");
+            else fprintf(stderr, "0");
+            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) fprintf(stderr, "1");
+            else fprintf(stderr, "0");
+            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) fprintf(stderr, "1");
+            else fprintf(stderr, "0");
+            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) fprintf(stderr, "1");
+            else fprintf(stderr, "0");
+            if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) fprintf(stderr, "1");
+            else fprintf(stderr, "0");
+            fprintf(stderr, " - "); // Print a "-"
           }
 
           /* Print the 49th bit */
-          if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][48]) printf("1");
-          else printf("0");
-          printf("\n");
+          if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][48]) fprintf(stderr, "1");
+          else fprintf(stderr, "0");
+          fprintf(stderr, "\n");
         }
 
-        printf("\n");
+        fprintf(stderr, "\n");
       } /* Endif(state->printDMRAmbeVoiceSampleBin) */
     } /* End for(Frame = 0; Frame < 6; Frame++) */
   } /* End if((state->printDMRAmbeVoiceSampleHex) || (state->printDMRAmbeVoiceSampleBin)) */
@@ -396,15 +396,15 @@ void printdPMRAmbeVoiceSample(dsd_opts * opts, dsd_state * state)
   /* Check if the output format is hexadecimal */
   if(state->printdPMRAmbeVoiceSampleHex)
   {
-    printf("\n");
+    fprintf(stderr, "\n");
 
     /* 4x49 bit AMBE Sample in a voice frame (16 per superframe) */
     for(i = 0; i < (NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4); i++)
     {
       /* Print the voice frame data number */
-      printf("%d/%d AMBE Voice Frame :\n", i + 1, NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4);
+      fprintf(stderr, "%d/%d AMBE Voice Frame :\n", i + 1, NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4);
 
-      printf("E1 = %d, E2 = %d, AMBE Sample #%d = ",
+      fprintf(stderr, "E1 = %d, E2 = %d, AMBE Sample #%d = ",
              state->dPMRVoiceFS2Frame.errs1[i],
              state->dPMRVoiceFS2Frame.errs2[i],
              i + 1);
@@ -420,62 +420,62 @@ void printdPMRAmbeVoiceSample(dsd_opts * opts, dsd_state * state)
         if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) Byte |= 0x04;
         if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) Byte |= 0x02;
         if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) Byte |= 0x01;
-        printf("0x%02X - ", Byte & 0xFF); // Print the byte
+        fprintf(stderr, "0x%02X - ", Byte & 0xFF); // Print the byte
       }
 
       /* Print the 49th bit */
       Byte = 0;
       if(state->dPMRVoiceFS2Frame.AmbeBit[i][48]) Byte |= 0x01;
-      printf("0x%02X\n", Byte & 0xFF); // Print the byte
+      fprintf(stderr, "0x%02X\n", Byte & 0xFF); // Print the byte
     }
   } /* End if(state->printdPMRAmbeVoiceSampleHex) */
 
   /* Check if the output format is binary */
   if(state->printdPMRAmbeVoiceSampleBin)
   {
-    printf("\n");
+    fprintf(stderr, "\n");
 
     /* 4x49 bit AMBE Sample in a voice frame (16 per superframe) */
     for(i = 0; i < (NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4); i++)
     {
       /* Print the voice frame data number */
-      printf("%d/%d AMBE Voice Frame :\n", i + 1, NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4);
+      fprintf(stderr, "%d/%d AMBE Voice Frame :\n", i + 1, NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4);
 
-      printf("E1 = %d, E2 = %d, AMBE Sample #%d = ",
+      fprintf(stderr, "E1 = %d, E2 = %d, AMBE Sample #%d = ",
              state->dPMRVoiceFS2Frame.errs1[i],
              state->dPMRVoiceFS2Frame.errs2[i],
              i + 1);
 
       for(j = 0; j < 48; )
       {
-        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) printf("1");
-        else printf("0");
-        printf(" - "); // Print a "-"
+        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.AmbeBit[i][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        fprintf(stderr, " - "); // Print a "-"
       }
 
       /* Print the 49th bit */
-      if(state->dPMRVoiceFS2Frame.AmbeBit[i][48]) printf("1");
-      else printf("0");
-      printf("\n");
+      if(state->dPMRVoiceFS2Frame.AmbeBit[i][48]) fprintf(stderr, "1");
+      else fprintf(stderr, "0");
+      fprintf(stderr, "\n");
     }
 
-    printf("\n");
+    fprintf(stderr, "\n");
   }
-  //printf("\n");
+  //fprintf(stderr, "\n");
 } /* End printdPMRAmbeVoiceSample() */
 
 
@@ -507,14 +507,14 @@ void printdPMRRawVoiceFrame (dsd_opts * opts, dsd_state * state)
     for(Frame = 0; Frame < (NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4); Frame++)
     {
       /* Print the voice frame data number */
-      printf("%d/%d AMBE Voice Frame :\n", i + 1, NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4);
+      fprintf(stderr, "%d/%d AMBE Voice Frame :\n", i + 1, NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4);
 
       /* Print the 72 bit of each voice frame (total 9 bytes per AMBE sample) */
       for(i = 0, j = 0; i < (72/8); i++)
       {
         Byte = 0;
 
-        if(i != 0) printf(" - "); // Print a "-" between each byte
+        if(i != 0) fprintf(stderr, " - "); // Print a "-" between each byte
 
         if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) Byte |= 0x80;
         if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) Byte |= 0x40;
@@ -525,9 +525,9 @@ void printdPMRRawVoiceFrame (dsd_opts * opts, dsd_state * state)
         if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) Byte |= 0x02;
         if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) Byte |= 0x01;
 
-        printf("0x%02X", Byte & 0xFF); // Print the byte
+        fprintf(stderr, "0x%02X", Byte & 0xFF); // Print the byte
       }
-      printf("\n");
+      fprintf(stderr, "\n");
     }
   } /* End if(state->printdPMRRawVoiceFrameHex) */
 
@@ -538,31 +538,31 @@ void printdPMRRawVoiceFrame (dsd_opts * opts, dsd_state * state)
     for(Frame = 0; Frame < (NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4); Frame++)
     {
       /* Print the voice frame data number */
-      printf("%d/%d AMBE Voice Frame :\n", i + 1, NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4);
+      fprintf(stderr, "%d/%d AMBE Voice Frame :\n", i + 1, NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4);
 
       /* Print the 72 bit of each voice frame (total 9 bytes per AMBE sample) */
       for(i = 0, j = 0; i < (72 / 8); i++)
       {
-        if(i != 0) printf(" - "); // Print a "-" between each byte
+        if(i != 0) fprintf(stderr, " - "); // Print a "-" between each byte
 
-        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) printf("1");
-        else printf("0");
-        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) printf("1");
-        else printf("0");
+        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
+        if(state->dPMRVoiceFS2Frame.RawVoiceBit[Frame][j++]) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
       }
-      printf("\n");
+      fprintf(stderr, "\n");
     }
   } /* End if(state->printdPMRRawVoiceFrameBin) */
 } /* End printdPMRRawVoiceFrame() */
@@ -603,8 +603,8 @@ void DisplaySpecialFormat(dsd_opts * opts, dsd_state * state)
 
   if(state->special_display_format_enable)
   {
-    printf("\n");
-    printf("AMBE frame in special format\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "AMBE frame in special format\n");
 
     /* A voice superframe contains 6 voice frames */
     for(Frame = 0; Frame < 6; Frame++)
@@ -624,16 +624,16 @@ void DisplaySpecialFormat(dsd_opts * opts, dsd_state * state)
           if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) Byte |= 0x04;
           if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) Byte |= 0x02;
           if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j++]) Byte |= 0x01;
-          printf("%02X", Byte & 0xFF); // Print the byte
+          fprintf(stderr, "%02X", Byte & 0xFF); // Print the byte
         }
 
         /* Print the last 49th bit */
         Byte = 0;
         if(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][48]) Byte |= 0x01;
-        printf("%02X", Byte & 0xFF); // Print the byte
+        fprintf(stderr, "%02X", Byte & 0xFF); // Print the byte
       }
     } /* End for(Frame = 0; Frame < 6; Frame++) */
-    printf("\n");
+    fprintf(stderr, "\n");
   } /* End if(state->special_display_format_enable) */
 } /* End DisplaySpecialFormat() */
 

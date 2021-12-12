@@ -20,7 +20,7 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
 
   if (opts->errorbars == 1)
   {
-    printf ("VOICE - ");
+    fprintf(stderr, "VOICE - ");
   }
 
   /* Start pseudo-random NXDN sequence after
@@ -41,11 +41,11 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
 //    sacch_raw[nsW[2*i+1]] = (1 & dibit);               // bit 0
     pr++;
 #ifdef NXDN_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 #ifdef NXDN_DUMP
-  printf (" ");
+  fprintf(stderr, " ");
 #endif
 
 // TODO : Unpuncture is done in the "NXDN_SACCH_decode" function
@@ -75,16 +75,16 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
   state->NxdnSacchRawPart[PartOfFrame].RAN = RAN;
   memcpy(state->NxdnSacchRawPart[PartOfFrame].Data, &sacch_decoded[8], 18); /* Copy the 18 bits of SACCH content */
 
-  printf("RAN=%02d - Part %d/4 ", RAN, PartOfFrame + 1);
-  if(CrcIsGood) printf("   (OK)   - ");
-  else printf("(CRC ERR) - ");
+  fprintf(stderr, "RAN=%02d - Part %d/4 ", RAN, PartOfFrame + 1);
+  if(CrcIsGood) fprintf(stderr, "   (OK)   - ");
+  else fprintf(stderr, "(CRC ERR) - ");
 
   /* Generate the key stream */
   NxdnEncryptionStreamGeneration(opts, state, KeyStream);
 
-  //printf("\nKeyStream = ");
-  //for(i = 0; i < 49; i++) printf("%d", KeyStream[i]);
-  //printf("\n");
+  //fprintf(stderr, "\nKeyStream = ");
+  //for(i = 0; i < 49; i++) fprintf(stderr, "%d", KeyStream[i]);
+  //fprintf(stderr, "\n");
 
 
   /* Determine the current part of superframe
@@ -106,7 +106,7 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
 
   if (opts->errorbars == 1)
   {
-    printf ("e:");
+    fprintf(stderr, "e:");
   }
 
   /* Start pseudo-random NXDN sequence after
@@ -125,7 +125,7 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
     {
       dibit = getDibit (opts, state);
 #ifdef NXDN_DUMP
-      printf ("%c", dibit + 48);
+      fprintf(stderr, "%c", dibit + 48);
 #endif
       ambe_fr[*w][*x] = *pr ^ (1 & (dibit >> 1)); // bit 1
       pr++;
@@ -146,21 +146,21 @@ void processNXDNVoice (dsd_opts * opts, dsd_state * state)
       /* Display AMBE frame content */
       /* Convert the 49 bit AMBE frame into 7 bytes */
       Convert49BitSampleInto7Bytes(state->ambe_deciphered, ambe7bytesArray);
-      printf("\nVoice Frame %d/4 : ", j + 1);
-      printf("E1 = %d ; E2 = %d ; Content = ", state->errs, state->errs2);
-      for(i = 0; i < 7; i++) printf("0x%02X, ", ambe7bytesArray[i] & 0xFF);
-      //printf("\n");
+      fprintf(stderr, "\nVoice Frame %d/4 : ", j + 1);
+      fprintf(stderr, "E1 = %d ; E2 = %d ; Content = ", state->errs, state->errs2);
+      for(i = 0; i < 7; i++) fprintf(stderr, "0x%02X, ", ambe7bytesArray[i] & 0xFF);
+      //fprintf(stderr, "\n");
     }
 #endif /* BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY */
 
 #ifdef NXDN_DUMP
-    printf (" ");
+    fprintf(stderr, " ");
 #endif
   } /* End for (j = 0; j < 4; j++) */
 
   if (opts->errorbars == 1)
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 
   /* Reset the SACCH CRCs when all 4 voice frame

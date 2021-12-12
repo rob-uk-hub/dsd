@@ -1,3 +1,11 @@
+Future version to be released (all features are currently active in the master branch)
+  New features:
+    Add a possibility to input signal sample from stdin
+    Add a possibility to ouput played sound sample to stdout
+
+  Fixed bugs :
+    Fixed FEC library : Some Golay and Hamming functions did not fix correctly flipped bits
+
 1.8.4-dev
   New features: None
 

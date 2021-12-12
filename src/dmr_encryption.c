@@ -88,7 +88,7 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
       }
       if (opts->errorbars == 1)
       {
-        printf ("%s", state->err_str);
+        fprintf(stderr, "%s", state->err_str);
       }
 
       state->debug_audio_errors += *errs2;

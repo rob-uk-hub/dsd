@@ -131,7 +131,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       k++;
     }
     cachbits[24] = 0;
-    printf ("%s ", cachbits);
+    fprintf(stderr, "%s ", cachbits);
 #endif
 
     // current slot frame 1
@@ -321,11 +321,11 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       state->directmode = 0;
       if(state->currentslot == 0)
       {
-        sprintf (state->slot1light, "[slot1]");
+        sprintf(state->slot1light, "[slot1]");
       }
       else
       {
-        sprintf (state->slot2light, "[slot2]");
+        sprintf(state->slot2light, "[slot2]");
       }
     }
     else if(strcmp (sync, DMR_DIRECT_MODE_TS1_DATA_SYNC) == 0)
@@ -333,14 +333,14 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       mutecurrentslot = 1;
       state->currentslot = 0;
       state->directmode = 1; /* Direct mode */
-      sprintf (state->slot1light, "[sLoT1]");
+      sprintf(state->slot1light, "[sLoT1]");
     }
     else if(strcmp (sync, DMR_DIRECT_MODE_TS2_DATA_SYNC) == 0)
     {
       mutecurrentslot = 1;
       state->currentslot = 1;
       state->directmode = 1; /* Direct mode */
-      sprintf (state->slot1light, "[sLoT2]");
+      sprintf(state->slot1light, "[sLoT2]");
     }
     else if((strcmp (sync, DMR_BS_VOICE_SYNC) == 0) || (strcmp (sync, DMR_MS_VOICE_SYNC) == 0))
     {
@@ -348,11 +348,11 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       state->directmode = 0;
       if(state->currentslot == 0)
       {
-        sprintf (state->slot1light, "[SLOT1]");
+        sprintf(state->slot1light, "[SLOT1]");
       }
       else
       {
-        sprintf (state->slot2light, "[SLOT2]");
+        sprintf(state->slot2light, "[SLOT2]");
       }
     }
     else if(strcmp (sync, DMR_DIRECT_MODE_TS1_VOICE_SYNC) == 0)
@@ -360,14 +360,14 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       mutecurrentslot = 0;
       state->currentslot = 0;
       state->directmode = 1; /* Direct mode */
-      sprintf (state->slot1light, "[sLoT1]");
+      sprintf(state->slot1light, "[sLoT1]");
     }
     else if(strcmp (sync, DMR_DIRECT_MODE_TS2_VOICE_SYNC) == 0)
     {
       mutecurrentslot = 0;
       state->currentslot = 1;
       state->directmode = 1; /* Direct mode */
-      sprintf (state->slot2light, "[sLoT2]");
+      sprintf(state->slot2light, "[sLoT2]");
     }
 
     if((strcmp (sync, DMR_MS_VOICE_SYNC) == 0) || (strcmp (sync, DMR_MS_DATA_SYNC) == 0))
@@ -378,7 +378,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
 // TODO : To be removed
 //    if((j == 0) && (opts->errorbars == 1))
 //    {
-//      printf ("%s %s  VOICE e:", state->slot1light, state->slot2light);
+//      fprintf(stderr, "%s %s  VOICE e:", state->slot1light, state->slot2light);
 //    }
 
 #ifdef DMR_DUMP
@@ -392,7 +392,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       k++;
     }
     syncbits[48] = 0;
-    printf ("%s ", syncbits);
+    fprintf(stderr, "%s ", syncbits);
 #endif
 
     // current slot frame 2 second half
@@ -506,7 +506,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
         k++;
       }
     cachbits[24] = 0;
-    printf ("%s ", cachbits);
+    fprintf(stderr, "%s ", cachbits);
 #endif
 
 
@@ -528,11 +528,11 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       state->directmode = 0;
       if(state->currentslot == 0)
       {
-        sprintf (state->slot2light, " slot2 ");
+        sprintf(state->slot2light, " slot2 ");
       }
       else
       {
-        sprintf (state->slot1light, " slot1 ");
+        sprintf(state->slot1light, " slot1 ");
       }
     }
     else if(strcmp (sync, DMR_BS_VOICE_SYNC) == 0)
@@ -540,24 +540,24 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       state->directmode = 0;
       if(state->currentslot == 0)
       {
-        sprintf (state->slot2light, " SLOT2 ");
+        sprintf(state->slot2light, " SLOT2 ");
       }
       else
       {
-        sprintf (state->slot1light, " SLOT1 ");
+        sprintf(state->slot1light, " SLOT1 ");
       }
     }
     else if((strcmp (sync, DMR_DIRECT_MODE_TS1_VOICE_SYNC) == 0) || (strcmp (sync, DMR_DIRECT_MODE_TS1_DATA_SYNC) == 0))
     {
       state->currentslot = 0;
       state->directmode = 1; /* Direct mode */
-      sprintf (state->slot1light, " sLoT1 ");
+      sprintf(state->slot1light, " sLoT1 ");
     }
     else if((strcmp (sync, DMR_DIRECT_MODE_TS2_VOICE_SYNC) == 0) || (strcmp (sync, DMR_DIRECT_MODE_TS2_DATA_SYNC) == 0))
     {
       state->currentslot = 1;
       state->directmode = 1; /* Direct mode */
-      sprintf (state->slot1light, " sLoT2 ");
+      sprintf(state->slot1light, " sLoT2 ");
     }
 
 #ifdef DMR_DUMP
@@ -571,7 +571,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
         k++;
       }
     syncbits[48] = 0;
-    printf ("%s ", syncbits);
+    fprintf(stderr, "%s ", syncbits);
 #endif
 
     if(j == 5)
@@ -615,15 +615,15 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
 
   if(opts->errorbars == 1)
   {
-    printf ("%s %s ", state->slot1light, state->slot2light);
+    fprintf(stderr, "%s %s ", state->slot1light, state->slot2light);
 
     /* Print the color code */
-    printf("| Color Code=%02d ", (int)state->color_code);
+    fprintf(stderr, "| Color Code=%02d ", (int)state->color_code);
 
-    if(state->color_code_ok) printf("(OK)      |");
-    else printf("(CRC ERR) |");
+    if(state->color_code_ok) fprintf(stderr, "(OK)      |");
+    else fprintf(stderr, "(CRC ERR) |");
 
-    printf (" VOICE e:");
+    fprintf(stderr, " VOICE e:");
   }
 
   /* Perform the SYNC DMR data embedded decoding */
@@ -637,6 +637,6 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
 
   if(opts->errorbars == 1)
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 } /* End processDMRvoice() */

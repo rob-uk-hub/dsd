@@ -18,7 +18,7 @@ void processNXDNData (dsd_opts * opts, dsd_state * state)
 
   if (opts->errorbars == 1)
   {
-    printf ("DATA  - ");
+    fprintf(stderr, "DATA  - ");
   }
 
   /* Start pseudo-random NXDN sequence after
@@ -34,11 +34,11 @@ void processNXDNData (dsd_opts * opts, dsd_state * state)
     sacch_raw[(2*i)+1] = (1 & dibit);               // bit 0
     pr++;
 #ifdef NXDN_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 #ifdef NXDN_DUMP
-  printf (" ");
+  fprintf(stderr, " ");
 #endif
 
 
@@ -60,9 +60,9 @@ void processNXDNData (dsd_opts * opts, dsd_state * state)
   state->NxdnSacchRawPart[PartOfFrame].RAN = RAN;
   memcpy(state->NxdnSacchRawPart[PartOfFrame].Data, &sacch_decoded[8], 18); /* Copy the 18 bits of SACCH content */
 
-  printf("RAN=%02d - Part %d/4 ", RAN, PartOfFrame + 1);
-  if(CrcIsGood) printf("   (OK)   - ");
-  else printf("(CRC ERR) - ");
+  fprintf(stderr, "RAN=%02d - Part %d/4 ", RAN, PartOfFrame + 1);
+  if(CrcIsGood) fprintf(stderr, "   (OK)   - ");
+  else fprintf(stderr, "(CRC ERR) - ");
 
 
   /* Decode the SACCH only when all 4 voice frame
@@ -77,13 +77,13 @@ void processNXDNData (dsd_opts * opts, dsd_state * state)
   {
     dibit = getDibit (opts, state);
 #ifdef NXDN_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 
   if (opts->errorbars == 1)
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 
   /* Reset the SACCH CRCs when all 4 voice frame

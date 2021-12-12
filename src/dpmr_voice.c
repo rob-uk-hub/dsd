@@ -69,7 +69,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
 
   if (opts->errorbars == 1)
   {
-    printf ("VOICE e:");
+    fprintf(stderr, "VOICE e:");
   }
 
   /* First CCH (Control CHannel) - 72 bit */
@@ -87,11 +87,11 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     CCH[0][(i * 2) + 1] =  (1 & dibit);          // bit 0
 
 #ifdef DPMR_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 #ifdef DPMR_DUMP
-  printf (" ");
+  fprintf(stderr, " ");
 #endif
 
   /* 4 TCH (Traffic CHannel) = 4 x 72 bit voice playload */
@@ -113,7 +113,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
       }
 
 #ifdef DPMR_DUMP
-      printf ("%c", dibit + 48);
+      fprintf(stderr, "%c", dibit + 48);
 #endif
       ambe_fr[j][*w][*x] = (1 & (dibit >> 1));   // bit 1
       ambe_fr[j][*y][*z] = (1 & dibit);          // bit 0
@@ -129,7 +129,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     }
     //processMbeFrame (opts, state, NULL, ambe_fr[j], NULL);
 #ifdef DPMR_DUMP
-    printf (" ");
+    fprintf(stderr, " ");
 #endif
   }
 
@@ -148,11 +148,11 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     CC[0][k++] =  (1 & dibit);          // bit 0
 
 #ifdef DPMR_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 #ifdef DPMR_DUMP
-  printf (" ");
+  fprintf(stderr, " ");
 #endif
 
   /* Get the color code */
@@ -173,11 +173,11 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     CCH[1][k++] =  (1 & dibit);          // bit 0
 
 #ifdef DPMR_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 #ifdef DPMR_DUMP
-  printf (" ");
+  fprintf(stderr, " ");
 #endif
 
   /* 4 TCH (Traffic CHannel) = 4 x 72 bit voice playload */
@@ -199,7 +199,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
       }
 
 #ifdef DPMR_DUMP
-      printf ("%c", dibit + 48);
+      fprintf(stderr, "%c", dibit + 48);
 #endif
       ambe_fr[j + 4][*w][*x] = (1 & (dibit >> 1));   // bit 1
       ambe_fr[j + 4][*y][*z] = (1 & dibit);          // bit 0
@@ -215,13 +215,13 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     }
     //processMbeFrame (opts, state, NULL, ambe_fr[j + 4], NULL);
 #ifdef DPMR_DUMP
-    printf (" ");
+    fprintf(stderr, " ");
 #endif
   }
 
 
 #ifdef dPMR_PRINT_DEBUG_INFO
-  printf("\n");
+  fprintf(stderr, "\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
   /* Initialize the Hamming (12,8) error code detection
@@ -252,7 +252,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     if(correctable)
     {
 #ifdef dPMR_PRINT_DEBUG_INFO
-      printf("CCH data corrected successfully\n");
+      fprintf(stderr, "CCH data corrected successfully\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
       HammingOk[i] = 1;
@@ -260,7 +260,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     else
     {
 #ifdef dPMR_PRINT_DEBUG_INFO
-      printf("ERROR !!! CCH data contains uncorrectable bit\n");
+      fprintf(stderr, "ERROR !!! CCH data contains uncorrectable bit\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
       HammingOk[i] = 0;
@@ -282,7 +282,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     if(CCHDataCRC[i] == CCHDataCRCComputed[i])
     {
 #ifdef dPMR_PRINT_DEBUG_INFO
-      printf("Good CCH CRCs ! CRC received = 0x%02X, CRC computed = 0x%02X\n",
+      fprintf(stderr, "Good CCH CRCs ! CRC received = 0x%02X, CRC computed = 0x%02X\n",
              CCHDataCRC[i], CCHDataCRCComputed[i]);
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
@@ -291,7 +291,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     else
     {
 #ifdef dPMR_PRINT_DEBUG_INFO
-      printf("ERROR !!! CCH CRCs are different ! CRC received = 0x%02X, CRC computed = 0x%02X\n",
+      fprintf(stderr, "ERROR !!! CCH CRCs are different ! CRC received = 0x%02X, CRC computed = 0x%02X\n",
              CCHDataCRC[i], CCHDataCRCComputed[i]);
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
@@ -343,25 +343,25 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
 
 #ifdef dPMR_PRINT_DEBUG_INFO
   /* Print Hamming debug info */
-  printf(" | ");
+  fprintf(stderr, " | ");
   for(i = 0; i < NB_OF_DPMR_VOICE_FRAME_TO_DECODE; i++)
   {
-    printf("Hamming[%u]=", i);
+    fprintf(stderr, "Hamming[%u]=", i);
     for(j = 0; j < 6; j++)
     {
-      if(HammingCorrectable[i][j]) printf("1");
-      else printf("0");
+      if(HammingCorrectable[i][j]) fprintf(stderr, "1");
+      else fprintf(stderr, "0");
     }
-    printf(" HammingOk[%u]=%u", i, HammingOk[i]);
-    printf(" CrcOk[%u]=%u", i, CrcOk[i]);
-    //printf(" Bit[%u]=", i);
+    fprintf(stderr, " HammingOk[%u]=%u", i, HammingOk[i]);
+    fprintf(stderr, " CrcOk[%u]=%u", i, CrcOk[i]);
+    //fprintf(stderr, " Bit[%u]=", i);
     //for(j = 0; j < 7; j++)
     //{
-    //  if(CCHDataHammingCorrected[i][j + 41]) printf("1");
-    //  else printf("0");
+    //  if(CCHDataHammingCorrected[i][j + 41]) fprintf(stderr, "1");
+    //  else fprintf(stderr, "0");
     //}
-    printf(" CRCrec=0x%02X CRCcomp=0x%02X", CCHDataCRC[i], CCHDataCRCComputed[i]);
-    if(i < (NB_OF_DPMR_VOICE_FRAME_TO_DECODE - 1)) printf(" - ");
+    fprintf(stderr, " CRCrec=0x%02X CRCcomp=0x%02X", CCHDataCRC[i], CCHDataCRCComputed[i]);
+    if(i < (NB_OF_DPMR_VOICE_FRAME_TO_DECODE - 1)) fprintf(stderr, " - ");
   }
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
@@ -378,7 +378,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     PartOfSuperFrame = 1;
 
 #ifdef dPMR_PRINT_DEBUG_INFO
-    printf("First part of the Super Frame\n");
+    fprintf(stderr, "First part of the Super Frame\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
     /* The next part will normally be the second part */
@@ -419,7 +419,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     PartOfSuperFrame = 2;
 
 #ifdef dPMR_PRINT_DEBUG_INFO
-    printf("Second part of the Super Frame\n");
+    fprintf(stderr, "Second part of the Super Frame\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
     /* The next part will normally be the first part */
@@ -464,7 +464,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     {
 
 #ifdef dPMR_PRINT_DEBUG_INFO
-      printf("Supposed first part of the Super Frame\n");
+      fprintf(stderr, "Supposed first part of the Super Frame\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
       /* Set the next part as the second part */
@@ -474,7 +474,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     {
 
 #ifdef dPMR_PRINT_DEBUG_INFO
-      printf("Supposed second part of the Super Frame\n");
+      fprintf(stderr, "Supposed second part of the Super Frame\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
       /* Set the next part as the first part */
@@ -484,7 +484,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     {
 
 #ifdef dPMR_PRINT_DEBUG_INFO
-      printf("Unknown part of the Super Frame\n");
+      fprintf(stderr, "Unknown part of the Super Frame\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
       /* Unknown current part, set to 0 */
@@ -495,34 +495,34 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
   if(state->dPMRVoiceFS2Frame.ColorCode[0] != (unsigned int)(-1))
   {
     /* Display the color code */
-    printf(" | Color Code=%02d ", (int)state->dPMRVoiceFS2Frame.ColorCode[0]);
+    fprintf(stderr, " | Color Code=%02d ", (int)state->dPMRVoiceFS2Frame.ColorCode[0]);
   }
   else
   {
     /* Unknown color code, display "??" */
-    printf(" | Color Code=?? ");
+    fprintf(stderr, " | Color Code=?? ");
   }
 
   /* Display the destination ID (talk group - TG) */
-  printf("| TG=%s", CalledID);
+  fprintf(stderr, "| TG=%s", CalledID);
   if(state->dPMRVoiceFS2Frame.CalledIDOk)
   {
-    printf(" (OK)      ");
+    fprintf(stderr, " (OK)      ");
   }
   else
   {
-    printf(" (CRC ERR) ");
+    fprintf(stderr, " (CRC ERR) ");
   }
 
   /* Display the source ID */
-  printf("| Src=%s", CallingID);
+  fprintf(stderr, "| Src=%s", CallingID);
   if(state->dPMRVoiceFS2Frame.CallingIDOk)
   {
-    printf(" (OK)      ");
+    fprintf(stderr, " (OK)      ");
   }
   else
   {
-    printf(" (CRC ERR) ");
+    fprintf(stderr, " (CRC ERR) ");
   }
 
 #endif /* (NB_OF_DPMR_VOICE_FRAME_TO_DECODE == 2) */
@@ -554,7 +554,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     } /* End if(HammingCorrectable[i][2] && CrcOk[i]) */
   }
 
-  if(opts->dPMR_curr_frame_is_encrypted) printf("| Scrambler ");
+  if(opts->dPMR_curr_frame_is_encrypted) fprintf(stderr, "| Scrambler ");
 
   /* Determine if the received frame is a voice frame, a voice frame + data
    * or a data frame.
@@ -587,12 +587,12 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
 
   if(VoiceFrameFlag)
   {
-    if(AttachedDataFlag) printf("| Voice+Data ");
-    else printf("| Voice ");
+    if(AttachedDataFlag) fprintf(stderr, "| Voice+Data ");
+    else fprintf(stderr, "| Voice ");
   }
   else
   {
-    printf("| Data ");
+    fprintf(stderr, "| Data ");
   }
 
   /* Demodulate and store AMBE sample only if the current superframe
@@ -633,7 +633,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
   {
 
 #ifdef dPMR_PRINT_DEBUG_INFO
-    printf("Voice frame to play\n");
+    fprintf(stderr, "Voice frame to play\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
 
     /* There is 4 AMBE voice sample per voice frame (so 2 x 4 = 8 per superframe) */
@@ -652,7 +652,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
       }
       if (opts->errorbars == 1)
       {
-        printf ("%s", state->err_str);
+        fprintf(stderr, "%s", state->err_str);
       }
 
       state->debug_audio_errors += *errs2;
@@ -674,13 +674,13 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
   else
   {
 #ifdef dPMR_PRINT_DEBUG_INFO
-    printf("Data frame, don't play it !\n");
+    fprintf(stderr, "Data frame, don't play it !\n");
 #endif /* dPMR_PRINT_DEBUG_INFO */
   }
 
   if (opts->errorbars == 1)
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 
 
@@ -688,16 +688,16 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
   /* Display the CCH content */
   for(i = 0; i < NB_OF_DPMR_VOICE_FRAME_TO_DECODE; i++)
   {
-    printf("i = %u - ", i);
-    printf("Comm Mode = %01u - ", state->dPMRVoiceFS2Frame.CommunicationMode[i]);
-    printf("Version = %01u - ", state->dPMRVoiceFS2Frame.Version[i]);
-    printf("Comms Format = %01u - ", state->dPMRVoiceFS2Frame.CommsFormat[i]);
-    printf("Emergency = %01u - ", state->dPMRVoiceFS2Frame.EmergencyPriority[i]);
-    printf("Reserved = %01u - ", state->dPMRVoiceFS2Frame.Reserved[i]);
-    printf("Slow Data = 0x%05X - ", state->dPMRVoiceFS2Frame.SlowData[i]);
-    if(HammingOk[i] && CrcOk[i]) printf("Valid");
-    else printf("CRC ERROR");
-    printf("\n");
+    fprintf(stderr, "i = %u - ", i);
+    fprintf(stderr, "Comm Mode = %01u - ", state->dPMRVoiceFS2Frame.CommunicationMode[i]);
+    fprintf(stderr, "Version = %01u - ", state->dPMRVoiceFS2Frame.Version[i]);
+    fprintf(stderr, "Comms Format = %01u - ", state->dPMRVoiceFS2Frame.CommsFormat[i]);
+    fprintf(stderr, "Emergency = %01u - ", state->dPMRVoiceFS2Frame.EmergencyPriority[i]);
+    fprintf(stderr, "Reserved = %01u - ", state->dPMRVoiceFS2Frame.Reserved[i]);
+    fprintf(stderr, "Slow Data = 0x%05X - ", state->dPMRVoiceFS2Frame.SlowData[i]);
+    if(HammingOk[i] && CrcOk[i]) fprintf(stderr, "Valid");
+    else fprintf(stderr, "CRC ERROR");
+    fprintf(stderr, "\n");
   }
 #endif /* dPMR_PRINT_DEBUG_INFO */
 

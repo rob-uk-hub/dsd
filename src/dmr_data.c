@@ -94,7 +94,7 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     k++;
   }
   cachbits[24] = 0;
-  printf ("%s ", cachbits);
+  fprintf(stderr, "%s ", cachbits);
 #endif
 
   // Current slot - First half - Data Payload - 1st part
@@ -200,35 +200,35 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     k++;
   }
   syncbits[48] = 0;
-  printf ("%s ", syncbits);
+  fprintf(stderr, "%s ", syncbits);
 #endif
 
   if((strcmp (sync, DMR_BS_DATA_SYNC) == 0) || (strcmp (sync, DMR_MS_DATA_SYNC) == 0))
   {
     if (state->currentslot == 0)
     {
-      sprintf (state->slot1light, "[slot1]");
+      sprintf(state->slot1light, "[slot1]");
     }
     else
     {
-      sprintf (state->slot2light, "[slot2]");
+      sprintf(state->slot2light, "[slot2]");
     }
   }
   else if(strcmp (sync, DMR_DIRECT_MODE_TS1_DATA_SYNC) == 0)
   {
     state->currentslot = 0;
-    sprintf (state->slot1light, "[sLoT1]");
+    sprintf(state->slot1light, "[sLoT1]");
   }
 
   else if(strcmp (sync, DMR_DIRECT_MODE_TS2_DATA_SYNC) == 0)
   {
     state->currentslot = 1;
-    sprintf (state->slot2light, "[sLoT2]");
+    sprintf(state->slot2light, "[sLoT2]");
   }
 
   if (opts->errorbars == 1)
   {
-    printf ("%s %s ", state->slot1light, state->slot2light);
+    fprintf(stderr, "%s %s ", state->slot1light, state->slot2light);
   }
 
   // Slot type - Second part - Parity bit
@@ -263,51 +263,51 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
 
   if (strcmp (bursttype, "0000") == 0)
   {
-    sprintf (state->fsubtype, " PI Header    ");
+    sprintf(state->fsubtype, " PI Header    ");
   }
   else if (strcmp (bursttype, "0001") == 0)
   {
-    sprintf (state->fsubtype, " VOICE Header ");
+    sprintf(state->fsubtype, " VOICE Header ");
   }
   else if (strcmp (bursttype, "0010") == 0)
   {
-    sprintf (state->fsubtype, " TLC          ");
+    sprintf(state->fsubtype, " TLC          ");
   }
   else if (strcmp (bursttype, "0011") == 0)
   {
-    sprintf (state->fsubtype, " CSBK         ");
+    sprintf(state->fsubtype, " CSBK         ");
   }
   else if (strcmp (bursttype, "0100") == 0)
   {
-    sprintf (state->fsubtype, " MBC Header   ");
+    sprintf(state->fsubtype, " MBC Header   ");
   }
   else if (strcmp (bursttype, "0101") == 0)
   {
-    sprintf (state->fsubtype, " MBC          ");
+    sprintf(state->fsubtype, " MBC          ");
   }
   else if (strcmp (bursttype, "0110") == 0)
   {
-    sprintf (state->fsubtype, " DATA Header  ");
+    sprintf(state->fsubtype, " DATA Header  ");
   }
   else if (strcmp (bursttype, "0111") == 0)
   {
-    sprintf (state->fsubtype, " RATE 1/2 DATA");
+    sprintf(state->fsubtype, " RATE 1/2 DATA");
   }
   else if (strcmp (bursttype, "1000") == 0)
   {
-    sprintf (state->fsubtype, " RATE 3/4 DATA");
+    sprintf(state->fsubtype, " RATE 3/4 DATA");
   }
   else if (strcmp (bursttype, "1001") == 0)
   {
-    sprintf (state->fsubtype, " Slot idle    ");
+    sprintf(state->fsubtype, " Slot idle    ");
   }
   else if (strcmp (bursttype, "1010") == 0)
   {
-    sprintf (state->fsubtype, " Rate 1 DATA  ");
+    sprintf(state->fsubtype, " Rate 1 DATA  ");
   }
   else
   {
-    sprintf (state->fsubtype, "              ");
+    sprintf(state->fsubtype, "              ");
   }
 
   // Current slot - First half - Data Payload - 1st part
@@ -328,18 +328,18 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
   if (opts->errorbars == 1)
   {
     /* Print the color code */
-    printf("| Color Code=%02d ", (int)state->color_code);
+    fprintf(stderr, "| Color Code=%02d ", (int)state->color_code);
 
-    if(state->color_code_ok) printf("(OK)      |");
-    else printf("(CRC ERR) |");
+    if(state->color_code_ok) fprintf(stderr, "(OK)      |");
+    else fprintf(stderr, "(CRC ERR) |");
 
     if (strcmp (state->fsubtype, "              ") == 0)
     {
-      printf (" Unknown burst type: %s", bursttype);
+      fprintf(stderr, " Unknown burst type: %s", bursttype);
     }
     else
     {
-      printf ("%s", state->fsubtype);
+      fprintf(stderr, "%s", state->fsubtype);
     }
   }
 
@@ -424,7 +424,7 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
 
   if (opts->errorbars == 1)
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 
 } /* End processDMRdata() */

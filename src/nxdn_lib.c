@@ -228,22 +228,22 @@ uint8_t NXDN_SACCH_raw_part_decode(uint8_t * Input, uint8_t * Output)
   /* Compute the Structure Field (remove 2 first bits of the SR Information in the SACCH) */
   //StructureField = (m_data[0] >> 6) & 0x03;
 
-  //printf("RAN=%u ; StructureField=%u ; ", RAN, StructureField);
+  //fprintf(stderr, "RAN=%u ; StructureField=%u ; ", RAN, StructureField);
 
-  //printf("SACCH=0x%02X-0x%02X-0x%02X-0x%02X-0x%02X ; ",
+  //fprintf(stderr, "SACCH=0x%02X-0x%02X-0x%02X-0x%02X-0x%02X ; ",
   //       m_data[0], m_data[1], m_data[2], m_data[3], m_data[4]);
 
-  //printf("CRC Extracted=0x%02X ; CRC computed=0x%02X ; ", CRCExtracted, CRCComputed);
+  //fprintf(stderr, "CRC Extracted=0x%02X ; CRC computed=0x%02X ; ", CRCExtracted, CRCComputed);
 
   /* Check CRCs */
   if(CRCExtracted == CRCComputed)
   {
-    //printf("OK !\n");
+    //fprintf(stderr, "OK !\n");
     GoodCrc = 1;
   }
   else
   {
-    //printf("ERROR !\n");
+    //fprintf(stderr, "ERROR !\n");
     GoodCrc = 0;
   }
 
@@ -366,26 +366,26 @@ uint8_t NXDN_FACCH1_decode(uint8_t * Input, uint8_t * Output)
   /* Compute the 12 bits CRC */
   CRCComputed = CRC12BitNXDN(Output, 80);
 
-  //printf("\n");
+  //fprintf(stderr, "\n");
 
-  //printf("SACCH1 Data = ");
+  //fprintf(stderr, "SACCH1 Data = ");
   //for(i = 0; i < 12; i++)
   //{
-  //  printf("0x%02X - ", m_data[i]);
+  //  fprintf(stderr, "0x%02X - ", m_data[i]);
   //}
-  //printf("\n");
+  //fprintf(stderr, "\n");
 
-  //printf("CRC computed = 0x%03X - CRC extracted = 0x%03X\n", CRCComputed, CRCExtracted);
+  //fprintf(stderr, "CRC computed = 0x%03X - CRC extracted = 0x%03X\n", CRCComputed, CRCExtracted);
 
   /* Check CRCs */
   if(CRCExtracted == CRCComputed)
   {
-    //printf("OK !\n");
+    //fprintf(stderr, "OK !\n");
     GoodCrc = 1;
   }
   else
   {
-    //printf("ERROR !\n");
+    //fprintf(stderr, "ERROR !\n");
     GoodCrc = 0;
   }
 
@@ -477,26 +477,26 @@ uint8_t NXDN_UDCH_decode(uint8_t * Input, uint8_t * Output)
   /* Compute the 15 bits CRC */
   CRCComputed = CRC15BitNXDN(Output, 184);
 
-  //printf("\n");
+  //fprintf(stderr, "\n");
 
-  //printf("FACCH2 Data = ");
+  //fprintf(stderr, "FACCH2 Data = ");
   //for(i = 0; i < 26; i++)
   //{
-  //  printf("0x%02X - ", m_data[i]);
+  //  fprintf(stderr, "0x%02X - ", m_data[i]);
   //}
-  //printf("\n");
+  //fprintf(stderr, "\n");
 
-  //printf("CRC computed = 0x%04X - CRC extracted = 0x%04X\n", CRCComputed, CRCExtracted);
+  //fprintf(stderr, "CRC computed = 0x%04X - CRC extracted = 0x%04X\n", CRCComputed, CRCExtracted);
 
   /* Check CRCs */
   if(CRCExtracted == CRCComputed)
   {
-    //printf("OK !\n");
+    //fprintf(stderr, "OK !\n");
     GoodCrc = 1;
   }
   else
   {
-    //printf("ERROR !\n");
+    //fprintf(stderr, "ERROR !\n");
     GoodCrc = 0;
   }
 
@@ -546,7 +546,7 @@ void NXDN_Elements_Content_decode(dsd_opts * opts, dsd_state * state,
   /* Save the "Message Type" field */
   state->NxdnElementsContent.MessageType = MessageType;
 
-  //printf("Message Type = 0x%02X ", MessageType & 0xFF);
+  //fprintf(stderr, "Message Type = 0x%02X ", MessageType & 0xFF);
 
   /* Decode the right "Message Type" */
   switch(MessageType)
@@ -605,7 +605,7 @@ void NXDN_Elements_Content_decode(dsd_opts * opts, dsd_state * state,
     /* Unknown Message Type */
     default:
     {
-      printf("Unknown Message type ");
+      fprintf(stderr, "Unknown Message type ");
       break;
     }
   } /* End switch(MessageType) */
@@ -679,9 +679,9 @@ void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message)
   state->NxdnElementsContent.KeyID = KeyID;
 
   /* Print the "CC Option" */
-  if(CCOption & 0x80) printf("Emergency ");
-  if(CCOption & 0x40) printf("Visitor ");
-  if(CCOption & 0x20) printf("Priority Paging ");
+  if(CCOption & 0x80) fprintf(stderr, "Emergency ");
+  if(CCOption & 0x40) fprintf(stderr, "Visitor ");
+  if(CCOption & 0x20) fprintf(stderr, "Priority Paging ");
 
   /* On an AES or DES encrypted frame one IV is used on two
    * superframe.
@@ -703,30 +703,30 @@ void NXDN_decode_VCALL(dsd_opts * opts, dsd_state * state, uint8_t * Message)
   }
 
   /* Print the "Call Type" */
-  printf("%s - ", NXDN_Call_Type_To_Str(CallType));
+  fprintf(stderr, "%s - ", NXDN_Call_Type_To_Str(CallType));
 
   /* Print the "Voice Call Option" */
   NXDN_Voice_Call_Option_To_Str(VoiceCallOption, DuplexMode, TransmissionMode);
-  printf("%s %s - ", DuplexMode, TransmissionMode);
+  fprintf(stderr, "%s %s - ", DuplexMode, TransmissionMode);
 
   /* Print the "Cipher Type" */
-  if(CipherType != 0) printf("%s - ", NXDN_Cipher_Type_To_Str(CipherType));
+  if(CipherType != 0) fprintf(stderr, "%s - ", NXDN_Cipher_Type_To_Str(CipherType));
 
   /* Print the Key ID */
-  if(CipherType != 0) printf("Key ID %u - ", KeyID & 0xFF);
+  if(CipherType != 0) fprintf(stderr, "Key ID %u - ", KeyID & 0xFF);
 
   /* Print Source ID and Destination ID (Talk Group or Unit ID) */
-  printf("Src=%u - Dst/TG=%u ", SourceUnitID & 0xFFFF, DestinationID & 0xFFFF);
-  if(state->NxdnElementsContent.VCallCrcIsGood) printf("   (OK)   - ");
-  else printf("(CRC ERR) - ");
+  fprintf(stderr, "Src=%u - Dst/TG=%u ", SourceUnitID & 0xFFFF, DestinationID & 0xFFFF);
+  if(state->NxdnElementsContent.VCallCrcIsGood) fprintf(stderr, "   (OK)   - ");
+  else fprintf(stderr, "(CRC ERR) - ");
 
-  //printf("\nVCALL = ");
+  //fprintf(stderr, "\nVCALL = ");
 
   //for(i = 0; i < 8; i++)
   //{
-  //  printf("0x%02X, ", ConvertBitIntoBytes(&Message[i * 8], 8) & 0xFF);
+  //  fprintf(stderr, "0x%02X, ", ConvertBitIntoBytes(&Message[i * 8], 8) & 0xFF);
   //}
-  //printf("\n");
+  //fprintf(stderr, "\n");
 
 } /* End NXDN_decode_VCALL() */
 
@@ -1009,7 +1009,7 @@ void NxdnEncryptionStreamGeneration (dsd_opts* opts, dsd_state* state, uint8_t K
 
   if((state->NxdnElementsContent.CipherParameterValidity))
   {
-    //printf("Scrambler Encryption ");
+    //fprintf(stderr, "Scrambler Encryption ");
 
     /* Scrambler encryption mode */
     if(state->NxdnElementsContent.CipherType == 0x01)

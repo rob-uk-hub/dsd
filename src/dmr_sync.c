@@ -138,9 +138,9 @@ void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[19
   }
 
   /* Print the destination ID (TG) and the source ID */
-  printf("| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
-  printf("FID=0x%02X ", TSVoiceSupFrame->FullLC.FeatureSetID);
-  if(TSVoiceSupFrame->FullLC.ServiceOptions & 0x80) printf("Emergency ");
+  fprintf(stderr, "| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
+  fprintf(stderr, "FID=0x%02X ", TSVoiceSupFrame->FullLC.FeatureSetID);
+  if(TSVoiceSupFrame->FullLC.ServiceOptions & 0x80) fprintf(stderr, "Emergency ");
   if(TSVoiceSupFrame->FullLC.ServiceOptions & 0x40)
   {
     /* By default select the basic privacy (BP), if the encryption mode is EP ARC4 or AES256
@@ -148,12 +148,12 @@ void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[19
      * the new encryption mode */
     opts->EncryptionMode = MODE_BASIC_PRIVACY;
 
-    printf("Encrypted ");
+    fprintf(stderr, "Encrypted ");
   }
   else
   {
     opts->EncryptionMode = MODE_UNENCRYPTED;
-    printf("Clear/Unencrypted ");
+    fprintf(stderr, "Clear/Unencrypted ");
   }
 
   /* Check the "Reserved" bits */
@@ -161,53 +161,53 @@ void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[19
   {
     /* Experimentally determined with DSD+, when the "Reserved" bit field
      * is equal to 0x2, this is a TXI call */
-    if((TSVoiceSupFrame->FullLC.ServiceOptions & 0x30) == 0x20) printf("TXI ");
-    else printf("Reserved=%d ", (TSVoiceSupFrame->FullLC.ServiceOptions & 0x30) >> 4);
+    if((TSVoiceSupFrame->FullLC.ServiceOptions & 0x30) == 0x20) fprintf(stderr, "TXI ");
+    else fprintf(stderr, "Reserved=%d ", (TSVoiceSupFrame->FullLC.ServiceOptions & 0x30) >> 4);
   }
-  if(TSVoiceSupFrame->FullLC.ServiceOptions & 0x08) printf("Broadcast ");
-  if(TSVoiceSupFrame->FullLC.ServiceOptions & 0x04) printf("OVCM ");
+  if(TSVoiceSupFrame->FullLC.ServiceOptions & 0x08) fprintf(stderr, "Broadcast ");
+  if(TSVoiceSupFrame->FullLC.ServiceOptions & 0x04) fprintf(stderr, "OVCM ");
   if(TSVoiceSupFrame->FullLC.ServiceOptions & 0x03)
   {
-    if((TSVoiceSupFrame->FullLC.ServiceOptions & 0x03) == 0x01) printf("Priority 1 ");
-    else if((TSVoiceSupFrame->FullLC.ServiceOptions & 0x03) == 0x02) printf("Priority 2 ");
-    else if((TSVoiceSupFrame->FullLC.ServiceOptions & 0x03) == 0x03) printf("Priority 3 ");
-    else printf("No Priority "); /* We should never go here */
+    if((TSVoiceSupFrame->FullLC.ServiceOptions & 0x03) == 0x01) fprintf(stderr, "Priority 1 ");
+    else if((TSVoiceSupFrame->FullLC.ServiceOptions & 0x03) == 0x02) fprintf(stderr, "Priority 2 ");
+    else if((TSVoiceSupFrame->FullLC.ServiceOptions & 0x03) == 0x03) fprintf(stderr, "Priority 3 ");
+    else fprintf(stderr, "No Priority "); /* We should never go here */
   }
-  printf("Call ");
+  fprintf(stderr, "Call ");
 
-  if(TSVoiceSupFrame->FullLC.DataValidity) printf("(OK) ");
-  else if(IrrecoverableErrors == 0) printf("RAS (FEC OK/CRC ERR)");
-  else printf("(FEC FAIL/CRC ERR)");
+  if(TSVoiceSupFrame->FullLC.DataValidity) fprintf(stderr, "(OK) ");
+  else if(IrrecoverableErrors == 0) fprintf(stderr, "RAS (FEC OK/CRC ERR)");
+  else fprintf(stderr, "(FEC FAIL/CRC ERR)");
 
 #ifdef PRINT_VOICE_LC_HEADER_BYTES
-  printf("\n");
-  printf("VOICE LC HEADER : ");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "VOICE LC HEADER : ");
   for(i = 0; i < 12; i++)
   {
-    printf("0x%02X", DmrDataByte[i]);
-    if(i != 11) printf(" - ");
+    fprintf(stderr, "0x%02X", DmrDataByte[i]);
+    if(i != 11) fprintf(stderr, " - ");
   }
 
-  printf("\n");
+  fprintf(stderr, "\n");
 
-  printf("BPTC(196,96) Reserved bit R(0)-R(2) = 0x%02X\n", BPTCReservedBits);
+  fprintf(stderr, "BPTC(196,96) Reserved bit R(0)-R(2) = 0x%02X\n", BPTCReservedBits);
 
-  printf("CRC extracted = 0x%04X - CRC computed = 0x%04X - ", CRCExtracted, CRCComputed);
+  fprintf(stderr, "CRC extracted = 0x%04X - CRC computed = 0x%04X - ", CRCExtracted, CRCComputed);
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
-    printf("CRCs are equal + FEC OK !\n");
+    fprintf(stderr, "CRCs are equal + FEC OK !\n");
   }
   else if(IrrecoverableErrors == 0)
   {
-    else printf("FEC correctly corrected but CRCs are incorrect\n");
+    else fprintf(stderr, "FEC correctly corrected but CRCs are incorrect\n");
   }
   else
   {
-    printf("ERROR !!! CRCs are different and FEC Failed !\n");
+    fprintf(stderr, "ERROR !!! CRCs are different and FEC Failed !\n");
   }
 
-  printf("Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
+  fprintf(stderr, "Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
 #endif /* PRINT_VOICE_LC_HEADER_BYTES */
 } /* End ProcessDmrVoiceLcHeader() */
 
@@ -328,48 +328,48 @@ void ProcessDmrTerminaisonLC(dsd_opts * opts, dsd_state * state, uint8_t info[19
   }
 
   /* Print the destination ID (TG) and the source ID */
-  printf("| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
-  printf("FID=0x%02X ", TSVoiceSupFrame->FullLC.FeatureSetID);
+  fprintf(stderr, "| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
+  fprintf(stderr, "FID=0x%02X ", TSVoiceSupFrame->FullLC.FeatureSetID);
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
-    printf("(OK) ");
+    fprintf(stderr, "(OK) ");
   }
   else if(IrrecoverableErrors == 0)
   {
-    printf("RAS (FEC OK/CRC ERR)");
+    fprintf(stderr, "RAS (FEC OK/CRC ERR)");
   }
-  else printf("(FEC FAIL/CRC ERR)");
+  else fprintf(stderr, "(FEC FAIL/CRC ERR)");
 
 #ifdef PRINT_TERMINAISON_LC_BYTES
-  printf("\n");
-  printf("TERMINAISON LINK CONTROL (TLC) : ");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "TERMINAISON LINK CONTROL (TLC) : ");
   for(i = 0; i < 12; i++)
   {
-    printf("0x%02X", DmrDataByte[i]);
-    if(i != 11) printf(" - ");
+    fprintf(stderr, "0x%02X", DmrDataByte[i]);
+    if(i != 11) fprintf(stderr, " - ");
   }
 
-  printf("\n");
+  fprintf(stderr, "\n");
 
-  printf("BPTC(196,96) Reserved bit R(0)-R(2) = 0x%02X\n", BPTCReservedBits);
+  fprintf(stderr, "BPTC(196,96) Reserved bit R(0)-R(2) = 0x%02X\n", BPTCReservedBits);
 
-  printf("CRC extracted = 0x%04X - CRC computed = 0x%04X - ", CRCExtracted, CRCComputed);
+  fprintf(stderr, "CRC extracted = 0x%04X - CRC computed = 0x%04X - ", CRCExtracted, CRCComputed);
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
-    printf("CRCs are equal + FEC OK !\n");
+    fprintf(stderr, "CRCs are equal + FEC OK !\n");
   }
   else if(IrrecoverableErrors == 0)
   {
-    else printf("FEC correctly corrected but CRCs are incorrect\n");
+    else fprintf(stderr, "FEC correctly corrected but CRCs are incorrect\n");
   }
   else
   {
-    printf("ERROR !!! CRCs are different and FEC Failed !\n");
+    fprintf(stderr, "ERROR !!! CRCs are different and FEC Failed !\n");
   }
 
-  printf("Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
+  fprintf(stderr, "Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
 #endif /* PRINT_TERMINAISON_LC_BYTES */
 } /* End ProcessDmrTerminaisonLC() */
 
@@ -478,7 +478,7 @@ void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state)
   if((IrrecoverableErrors == 0))// && CRCCorrect)
   {
     /* Data ara correct */
-    //printf("\nLink Control (LC) Data CRCs are correct !!! Number of error = %u\n", NbOfError);
+    //fprintf(stderr, "\nLink Control (LC) Data CRCs are correct !!! Number of error = %u\n", NbOfError);
 
     /* CRC is correct so consider the Full LC data as correct/valid */
     TSVoiceSupFrame->FullLC.DataValidity = 1;
@@ -490,46 +490,46 @@ void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state)
   }
 
   /* Print the destination ID (TG) and the source ID */
-  printf("| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
-  printf("FID=0x%02X ", TSVoiceSupFrame->FullLC.FeatureSetID);
+  fprintf(stderr, "| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
+  fprintf(stderr, "FID=0x%02X ", TSVoiceSupFrame->FullLC.FeatureSetID);
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
-    printf("(OK)");
+    fprintf(stderr, "(OK)");
   }
   else if(IrrecoverableErrors == 0)
   {
-    printf("RAS (FEC OK/CRC ERR)");
+    fprintf(stderr, "RAS (FEC OK/CRC ERR)");
   }
-  else printf("(FEC FAIL/CRC ERR)");
+  else fprintf(stderr, "(FEC FAIL/CRC ERR)");
 
 #ifdef PRINT_VOICE_BURST_BYTES
-  printf("\n");
-  printf("VOICE BURST BYTES : ");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "VOICE BURST BYTES : ");
   for(i = 0; i < 10; i++)
   {
-    printf("0x%02X", LC_DataBytes[i]);
-    if(i != 9) printf(" - ");
+    fprintf(stderr, "0x%02X", LC_DataBytes[i]);
+    if(i != 9) fprintf(stderr, " - ");
   }
 
-  printf("\n");
+  fprintf(stderr, "\n");
 
-  printf("CRC extracted = 0x%04X - CRC computed = 0x%04X - ", CRCExtracted, CRCComputed);
+  fprintf(stderr, "CRC extracted = 0x%04X - CRC computed = 0x%04X - ", CRCExtracted, CRCComputed);
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
-    printf("CRCs are equal + FEC OK !\n");
+    fprintf(stderr, "CRCs are equal + FEC OK !\n");
   }
   else if(IrrecoverableErrors == 0)
   {
-    else printf("FEC correctly corrected but CRCs are incorrect\n");
+    else fprintf(stderr, "FEC correctly corrected but CRCs are incorrect\n");
   }
   else
   {
-    printf("ERROR !!! CRCs are different and FEC Failed !\n");
+    fprintf(stderr, "ERROR !!! CRCs are different and FEC Failed !\n");
   }
 
-  printf("Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
+  fprintf(stderr, "Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
 #endif /* PRINT_VOICE_BURST_BYTES */
 
 } /* End ProcessVoiceBurstSync() */
@@ -631,7 +631,7 @@ uint32_t ComputeAndCorrectFullLinkControlCrc(uint8_t * FullLinkControlDataBytes,
   if((result == RS_12_9_CORRECT_ERRORS_RESULT_NO_ERRORS_FOUND) ||
      (result == RS_12_9_CORRECT_ERRORS_RESULT_ERRORS_CORRECTED))
   {
-    //printf("CRC OK : 0x%06X\n", *CRCComputed);
+    //fprintf(stderr, "CRC OK : 0x%06X\n", *CRCComputed);
     CrcIsCorrect = 1;
 
     /* Reconstitue full link control data after FEC correction */
@@ -661,7 +661,7 @@ uint32_t ComputeAndCorrectFullLinkControlCrc(uint8_t * FullLinkControlDataBytes,
   }
   else
   {
-    //printf("CRC ERROR : 0x%06X\n", *CRCComputed);
+    //fprintf(stderr, "CRC ERROR : 0x%06X\n", *CRCComputed);
     CrcIsCorrect = 0;
   }
 

@@ -547,7 +547,7 @@ uint32_t BPTC_16x2_Extract_Data(uint8_t InputInterleavedData[32], uint8_t DMRDat
     if(DMRDataExtracted[i] == DMRDataExtracted[i + 16]) ParityCheckErrorNb++;
   }
 
-  //printf("Hamming ERR=%u ; Parity ERR=%u", HammingIrrecoverableErrorNb, ParityCheckErrorNb);
+  //fprintf(stderr, "Hamming ERR=%u ; Parity ERR=%u", HammingIrrecoverableErrorNb, ParityCheckErrorNb);
 
   /* Return the number of irrecoverable Hamming errors +
    * the number of parity check error */

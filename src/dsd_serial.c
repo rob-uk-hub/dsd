@@ -8,11 +8,11 @@ void openSerial (dsd_opts * opts, dsd_state * state)
 
   UNUSED_VARIABLE(state);
 
-  printf ("Opening serial port %s and setting baud to %i\n", opts->serial_dev, opts->serial_baud);
+  fprintf(stderr, "Opening serial port %s and setting baud to %i\n", opts->serial_dev, opts->serial_baud);
   opts->serial_fd = open (opts->serial_dev, O_WRONLY);
   if (opts->serial_fd == -1)
   {
-    printf ("Error, couldn't open %s\n", opts->serial_dev);
+    fprintf(stderr, "Error, couldn't open %s\n", opts->serial_dev);
     exit (1);
   }
 
@@ -79,7 +79,7 @@ void resumeScan (dsd_opts * opts, dsd_state * state)
 
   if (opts->serial_fd > 0)
   {
-    sprintf (cmd, "\rKEY00\r");
+    sprintf(cmd, "\rKEY00\r");
     result = write (opts->serial_fd, cmd, 7);
     cmd[0] = 2;
     cmd[1] = 75;

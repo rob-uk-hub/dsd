@@ -68,11 +68,12 @@ void ProcessNXDNFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
 
     default:
     {
-      printf("- Unknown NXDN Frame type\n");
+      fprintf(stderr, "- Unknown NXDN Frame type\n");
 
       /* Unknown frame type, simply skip the entire frame
-       * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit */
-      skipDibit(opts, state, (384 - 20 - 16) / 2);
+       * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit
+       * Preserve 24 bits (12 dibit) => 174 - 12 = 162 dibit */
+      skipDibit(opts, state, ((384 - 20 - 16) / 2) - 12);
       break;
     } /* End default */
   } /* End switch(state->NxdnLich.RFChannelType) */
@@ -100,43 +101,49 @@ void ProcessNxdnRCCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
   /* Remove compiler warning */
   UNUSED_VARIABLE(Inverted);
 
-  sprintf (state->fsubtype, " RCCH         ");
+  sprintf(state->fsubtype, " RCCH         ");
 
   switch(state->NxdnLich.CompleteLich)
   {
     case 0b0011000:
     {
-      printf("- RCCH - CCCH Transmission using Short CAC\n");
+      fprintf(stderr, "- RCCH - CCCH Transmission using Short CAC\n");
       SkipEntireFrameFlag = 1;
       break;
     }
     case 0b0001000:
     {
-      printf("- RCCH - UPCH or CCCH Transmission using Long CAC\n");
+      fprintf(stderr, "- RCCH - UPCH or CCCH Transmission using Long CAC\n");
       SkipEntireFrameFlag = 1;
       break;
     }
     case 0b0000001:
     {
-      printf("- RCCH - CAC Transmission\n");
+      fprintf(stderr, "- RCCH - CAC Transmission\n");
       SkipEntireFrameFlag = 1;
       break;
     }
     case 0b0000011:
     {
-      printf("- RCCH - CAC Transmission which has not to be received\n");
+      fprintf(stderr, "- RCCH - CAC Transmission which has not to be received\n");
       SkipEntireFrameFlag = 1;
       break;
     }
     case 0b0000101:
     {
-      printf("- RCCH - CAC Transmission which can be received arbitrary\n");
+      fprintf(stderr, "- RCCH - CAC Transmission which can be received arbitrary\n");
+      SkipEntireFrameFlag = 1;
+      break;
+    }
+    case 0b0011001:
+    {
+      fprintf(stderr, "- RCCH - IDAS\n");
       SkipEntireFrameFlag = 1;
       break;
     }
     default:
     {
-      printf("- RCCH - Unknown RCCH Frame\n");
+      fprintf(stderr, "- RCCH - Unknown RCCH Frame\n");
       SkipEntireFrameFlag = 1;
       break;
     } /* End default */
@@ -145,8 +152,9 @@ void ProcessNxdnRCCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
   if(SkipEntireFrameFlag)
   {
     /* Unknown frame type or frame not implemented yet, simply skip the entire frame
-     * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit */
-    skipDibit(opts, state, (384 - 20 - 16) / 2);
+     * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit
+     * Preserve 24 bits (12 dibit) => 174 - 12 = 162 dibit */
+    skipDibit(opts, state, ((384 - 20 - 16) / 2) - 12);
   }
 
 } /* End ProcessNxdnRCCHFrame() */
@@ -183,7 +191,7 @@ void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b0110101: /* Voice call transmission : Superframe SACCH, first half VCH & last half FACCH1 */
     case 0b0110011: /* Voice call transmission : Superframe SACCH, first half FACCH1 & last half VCH */
     {
-      printf("- RTCH - ");
+      fprintf(stderr, "- RTCH - ");
       processNXDNVoice(opts, state);
       break;
     }
@@ -191,7 +199,7 @@ void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b0110000: /* Voice call transmission : Superframe SACCH, two FACCH1s */
     case 0b0110001: /* Voice call transmission : Superframe SACCH, two FACCH1s */
     {
-      printf("- RTCH - ");
+      fprintf(stderr, "- RTCH - ");
       processNXDNData(opts, state);
       break;
     }
@@ -199,7 +207,7 @@ void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b0111000: /* Voice call transmission : Superframe SACCH, Idle State  */
     case 0b0111001: /* Voice call transmission : Superframe SACCH, Idle State  */
     {
-      printf("- RTCH - ");
+      fprintf(stderr, "- RTCH - ");
       ProcessNXDNIdleData(opts, state, Inverted);
       break;
     }
@@ -207,8 +215,8 @@ void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b0100000: /* Voice call transmission : Non-superframe SACCH, two FACCH1s */
     case 0b0100001: /* Voice call transmission : Non-superframe SACCH, two FACCH1s */
     {
-      //printf("- RTCH - Non-superframe SACCH with two FACCH1s\n");
-      printf("- RDCH - ");
+      //fprintf(stderr, "- RTCH - Non-superframe SACCH with two FACCH1s\n");
+      fprintf(stderr, "- RDCH - ");
       ProcessNXDNFacch1Data(opts, state, Inverted);
       break;
     }
@@ -216,7 +224,7 @@ void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b0101110: /* UDCH Transmission */
     case 0b0101111: /* UDCH Transmission */
     {
-      printf("- RTCH - UDCH Transmission - ");
+      fprintf(stderr, "- RTCH - UDCH Transmission - ");
       ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
@@ -224,13 +232,13 @@ void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b0101000: /* FACCH2 Transmission */
     case 0b0101001: /* FACCH2 Transmission */
     {
-      printf("- RTCH - FACCH2 Transmission - ");
+      fprintf(stderr, "- RTCH - FACCH2 Transmission - ");
       ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
     default:
     {
-      printf("- RTCH - Unknown RTCH Frame\n");
+      fprintf(stderr, "- RTCH - Unknown RTCH Frame\n");
       SkipEntireFrameFlag = 1;
       break;
     } /* End default */
@@ -239,8 +247,9 @@ void ProcessNxdnRTCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
   if(SkipEntireFrameFlag)
   {
     /* Unknown frame type or frame not implemented yet, simply skip the entire frame
-     * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit */
-    skipDibit(opts, state, (384 - 20 - 16) / 2);
+     * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit
+     * Preserve 8 bits (4 dibit) => 174 - 4 = 170 dibit */
+    skipDibit(opts, state, ((384 - 20 - 16) / 2) - 4);
   }
 } /* End ProcessNxdnRTCHFrame() */
 
@@ -276,7 +285,7 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b1010101: /* Voice call transmission : Superframe SACCH, first half VCH & last half FACCH1 */
     case 0b1010011: /* Voice call transmission : Superframe SACCH, first half FACCH1 & last half VCH */
     {
-      printf("- RDCH - ");
+      fprintf(stderr, "- RDCH - ");
       processNXDNVoice(opts, state);
       break;
     }
@@ -284,7 +293,7 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b1010000: /* Voice call transmission : Superframe SACCH, two FACCH1s */
     case 0b1010001: /* Voice call transmission : Superframe SACCH, two FACCH1s */
     {
-      printf("- RDCH - ");
+      fprintf(stderr, "- RDCH - ");
       processNXDNData(opts, state);
       break;
     }
@@ -292,7 +301,7 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b1011000: /* Voice call transmission : Superframe SACCH, Idle State  */
     case 0b1011001: /* Voice call transmission : Superframe SACCH, Idle State  */
     {
-      printf("- RDCH - ");
+      fprintf(stderr, "- RDCH - ");
       ProcessNXDNIdleData(opts, state, Inverted);
       break;
     }
@@ -300,8 +309,8 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b1000000: /* Voice call transmission : Non-superframe SACCH, two FACCH1s */
     case 0b1000001: /* Voice call transmission : Non-superframe SACCH, two FACCH1s */
     {
-      //printf("- RDCH - Non-superframe SACCH with two FACCH1s\n");
-      printf("- RDCH - ");
+      //fprintf(stderr, "- RDCH - Non-superframe SACCH with two FACCH1s\n");
+      fprintf(stderr, "- RDCH - ");
       ProcessNXDNFacch1Data(opts, state, Inverted);
       break;
     }
@@ -309,7 +318,7 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b1001110: /* UDCH Transmission */
     case 0b1001111: /* UDCH Transmission */
     {
-      printf("- RDCH - UDCH Transmission - ");
+      fprintf(stderr, "- RDCH - UDCH Transmission - ");
       ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
@@ -317,14 +326,14 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     case 0b1001000: /* FACCH2 Transmission */
     case 0b1001001: /* FACCH2 Transmission */
     {
-      printf("- RDCH - FACCH2 Transmission - ");
+      fprintf(stderr, "- RDCH - FACCH2 Transmission - ");
       ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
 
     default:
     {
-      printf("- RDCH - Unknown RDCH Frame\n");
+      fprintf(stderr, "- RDCH - Unknown RDCH Frame\n");
       SkipEntireFrameFlag = 1;
       break;
     } /* End default */
@@ -333,8 +342,9 @@ void ProcessNxdnRDCHFrame(dsd_opts * opts, dsd_state * state, uint8_t Inverted)
   if(SkipEntireFrameFlag)
   {
     /* Unknown frame type or frame not implemented yet, simply skip the entire frame
-     * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit */
-    skipDibit(opts, state, (384 - 20 - 16) / 2);
+     * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit
+     * Preserve 8 bits (4 dibit) => 174 - 4 = 170 dibit */
+    skipDibit(opts, state, ((384 - 20 - 16) / 2) - 4);
   }
 } /* End ProcessNxdnRDCHFrame() */
 
@@ -367,50 +377,50 @@ void ProcessNxdnRTCH_C_Frame(dsd_opts * opts, dsd_state * state, uint8_t Inverte
     case 0b1110101: /* Voice call transmission : Superframe SACCH, first half VCH & last half FACCH1 */
     case 0b1110011: /* Voice call transmission : Superframe SACCH, first half FACCH1 & last half VCH */
     {
-      printf("- RTCH_C - ");
+      fprintf(stderr, "- RTCH_C - ");
       processNXDNVoice(opts, state);
       break;
     }
 
     case 0b1110001: /* Voice call transmission : Superframe SACCH, two FACCH1s */
     {
-      printf("- RTCH_C - ");
+      fprintf(stderr, "- RTCH_C - ");
       processNXDNData(opts, state);
       break;
     }
 
     case 0b1111001: /* Voice call transmission : Superframe SACCH, Idle State  */
     {
-      printf("- RTCH_C - ");
+      fprintf(stderr, "- RTCH_C - ");
       ProcessNXDNIdleData(opts, state, Inverted);
       break;
     }
 
     case 0b1100001: /* Voice call transmission : Non-superframe SACCH, two FACCH1s */
     {
-      //printf("- RTCH_C - Non-superframe SACCH with two FACCH1s\n");
-      printf("- RTCH_C - ");
+      //fprintf(stderr, "- RTCH_C - Non-superframe SACCH with two FACCH1s\n");
+      fprintf(stderr, "- RTCH_C - ");
       ProcessNXDNFacch1Data(opts, state, Inverted);
       break;
     }
 
     case 0b1101111: /* UDCH Transmission */
     {
-      printf("- RTCH_C - UDCH Transmission - ");
+      fprintf(stderr, "- RTCH_C - UDCH Transmission - ");
       ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
 
     case 0b1101001: /* FACCH2 Transmission */
     {
-      printf("- RTCH_C - FACCH2 Transmission - ");
+      fprintf(stderr, "- RTCH_C - FACCH2 Transmission - ");
       ProcessNXDNUdchData(opts, state, Inverted);
       break;
     }
 
     default:
     {
-      printf("- RTCH_C - Unknown RTCH_C Frame\n");
+      fprintf(stderr, "- RTCH_C - Unknown RTCH_C Frame\n");
       SkipEntireFrameFlag = 1;
       break;
     } /* End default */
@@ -419,8 +429,9 @@ void ProcessNxdnRTCH_C_Frame(dsd_opts * opts, dsd_state * state, uint8_t Inverte
   if(SkipEntireFrameFlag)
   {
     /* Unknown frame type or frame not implemented yet, simply skip the entire frame
-     * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit */
-    skipDibit(opts, state, (384 - 20 - 16) / 2);
+     * 384 bits - 20 bits Frame Sync Word - 16 bits LICH = 348 bits = 174 dibit
+     * Preserve 8 bits (4 dibit) => 174 - 4 = 170 dibit */
+    skipDibit(opts, state, ((384 - 20 - 16) / 2) - 4);
   }
 } /* End ProcessNxdnRDCHFrame() */
 
@@ -456,7 +467,7 @@ void ProcessNXDNIdleData (dsd_opts * opts, dsd_state * state, uint8_t Inverted)
 
   if (opts->errorbars == 1)
   {
-    printf ("DATA  - ");
+    fprintf(stderr, "DATA  - ");
   }
 
   /* Start pseudo-random NXDN sequence after
@@ -472,11 +483,11 @@ void ProcessNXDNIdleData (dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     sacch_raw[(2*i)+1] = (1 & dibit);               // bit 0
     pr++;
 #ifdef NXDN_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 #ifdef NXDN_DUMP
-  printf (" ");
+  fprintf(stderr, " ");
 #endif
 
 
@@ -498,13 +509,13 @@ void ProcessNXDNIdleData (dsd_opts * opts, dsd_state * state, uint8_t Inverted)
   state->NxdnSacchRawPart[PartOfFrame].RAN = RAN;
   memcpy(state->NxdnSacchRawPart[PartOfFrame].Data, &sacch_decoded[8], 18); /* Copy the 18 bits of SACCH content */
 
-  printf("RAN=%02d - Part %d/4 ", RAN, PartOfFrame + 1);
-  if(CrcIsGood) printf("   (OK)   - ");
-  else printf("(CRC ERR) - ");
+  fprintf(stderr, "RAN=%02d - Part %d/4 ", RAN, PartOfFrame + 1);
+  if(CrcIsGood) fprintf(stderr, "   (OK)   - ");
+  else fprintf(stderr, "(CRC ERR) - ");
 
 
   /* This frame is an idle frame */
-  printf("Idle");
+  fprintf(stderr, "Idle");
 
 
   /* Decode the SACCH only when all 4 voice frame
@@ -519,13 +530,13 @@ void ProcessNXDNIdleData (dsd_opts * opts, dsd_state * state, uint8_t Inverted)
   {
     dibit = getDibit (opts, state);
 #ifdef NXDN_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 
   if (opts->errorbars == 1)
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 
   /* Reset the SACCH CRCs when all 4 voice frame
@@ -572,7 +583,7 @@ void ProcessNXDNFacch1Data (dsd_opts * opts, dsd_state * state, uint8_t Inverted
 
   if (opts->errorbars == 1)
   {
-    printf ("DATA  - ");
+    fprintf(stderr, "DATA  - ");
   }
 
   /* Start pseudo-random NXDN sequence after
@@ -588,11 +599,11 @@ void ProcessNXDNFacch1Data (dsd_opts * opts, dsd_state * state, uint8_t Inverted
     sacch_raw[(2*i)+1] = (1 & dibit);               // bit 0
     pr++;
 #ifdef NXDN_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 #ifdef NXDN_DUMP
-  printf (" ");
+  fprintf(stderr, " ");
 #endif
 
 
@@ -614,13 +625,13 @@ void ProcessNXDNFacch1Data (dsd_opts * opts, dsd_state * state, uint8_t Inverted
   state->NxdnSacchRawPart[PartOfFrame].RAN = RAN;
   memcpy(state->NxdnSacchRawPart[PartOfFrame].Data, &sacch_decoded[8], 18); /* Copy the 18 bits of SACCH content */
 
-  printf("RAN=%02d - Part %d/4 ", RAN, PartOfFrame + 1);
-  if(CrcIsGood) printf("   (OK)   - ");
-  else printf("(CRC ERR) - ");
+  fprintf(stderr, "RAN=%02d - Part %d/4 ", RAN, PartOfFrame + 1);
+  if(CrcIsGood) fprintf(stderr, "   (OK)   - ");
+  else fprintf(stderr, "(CRC ERR) - ");
 
 
   /* This frame is an FACCH1 frame */
-  printf("FACCH1 - ");
+  fprintf(stderr, "FACCH1 - ");
 
 
   /* Decode the SACCH only when all 4 voice frame
@@ -651,7 +662,7 @@ void ProcessNXDNFacch1Data (dsd_opts * opts, dsd_state * state, uint8_t Inverted
       pr++;
 
 #ifdef NXDN_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
     } /* End for (i = 0; i < 72; i++) */
 
@@ -661,13 +672,13 @@ void ProcessNXDNFacch1Data (dsd_opts * opts, dsd_state * state, uint8_t Inverted
     state->NxdnFacch1RawPart[j].CrcIsGood = Facch1CrcIsGood;
     memcpy(state->NxdnFacch1RawPart[j].Data, facch1_decoded, 80);
 
-    if(Facch1CrcIsGood) printf("FACCH1 CRC %d is good - ", j + 1);
-    else printf("FACCH1 CRC %d is bad - ", j + 1);
+    if(Facch1CrcIsGood) fprintf(stderr, "FACCH1 CRC %d is good - ", j + 1);
+    else fprintf(stderr, "FACCH1 CRC %d is bad - ", j + 1);
   } /* End for(j = 0; j < 2; j++) */
 
   if (opts->errorbars == 1)
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 
   /* Reset the SACCH CRCs when all 4 voice frame
@@ -711,7 +722,7 @@ void ProcessNXDNUdchData (dsd_opts * opts, dsd_state * state, uint8_t Inverted)
 
   if (opts->errorbars == 1)
   {
-    printf ("DATA  - ");
+    fprintf(stderr, "DATA  - ");
   }
 
   /* Start pseudo-random NXDN sequence after
@@ -727,11 +738,11 @@ void ProcessNXDNUdchData (dsd_opts * opts, dsd_state * state, uint8_t Inverted)
     facch2_raw[(2*i)+1] = (1 & dibit);               // bit 0
     pr++;
 #ifdef NXDN_DUMP
-    printf ("%c", dibit + 48);
+    fprintf(stderr, "%c", dibit + 48);
 #endif
   }
 #ifdef NXDN_DUMP
-  printf (" ");
+  fprintf(stderr, " ");
 #endif
 
   /* Extract the UDCH/FACCH2 content */
@@ -743,22 +754,21 @@ void ProcessNXDNUdchData (dsd_opts * opts, dsd_state * state, uint8_t Inverted)
   StructureField = (facch2_decoded[0]<<1 | facch2_decoded[1]<<0) & 0x03; /* Compute the Structure Field (remove 2 first bits of the SR Information in the FACCH2) */
   RAN = (facch2_decoded[2]<<5 | facch2_decoded[3]<<4 | facch2_decoded[4]<<3 | facch2_decoded[5]<<2 | facch2_decoded[6]<<1 | facch2_decoded[7]<<0) & 0x3F; /* Compute the RAN (6 last bits of the SR Information in the FACCH2) */
 
-  printf("RAN=%02d ", RAN);
-  if(Facch2CrcIsGood) printf("   (OK)   - ");
-  else printf("(CRC ERR) - ");
+  fprintf(stderr, "RAN=%02d ", RAN);
+  if(Facch2CrcIsGood) fprintf(stderr, "   (OK)   - ");
+  else fprintf(stderr, "(CRC ERR) - ");
 
   /* This frame is an FACCH2 frame */
-  printf("FACCH2 - ");
+  fprintf(stderr, "FACCH2 - ");
 
-  if(Facch2CrcIsGood) printf("UDCH/FACCH2 CRC is good - ");
-  else printf("UDCH/FACCH2 CRC is bad - ");
+  if(Facch2CrcIsGood) fprintf(stderr, "UDCH/FACCH2 CRC is good - ");
+  else fprintf(stderr, "UDCH/FACCH2 CRC is bad - ");
 
   if (opts->errorbars == 1)
   {
-    printf ("\n");
+    fprintf(stderr, "\n");
   }
 } /* End ProcessNXDNUdchData() */
-
 
 
 
