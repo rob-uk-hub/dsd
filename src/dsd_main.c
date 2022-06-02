@@ -344,7 +344,7 @@ void usage(void)
   fprintf(stderr, "\n");
   fprintf(stderr, "Input/Output options:\n");
   fprintf(stderr, "  -i <device>   Audio input device (default is /dev/audio, - for piped stdin)\n");
-  fprintf(stderr, "  -o <device>   Audio output device (default is /dev/audio) - for piped stdout\n");
+  fprintf(stderr, "  -o <device>   Audio output device (default is /dev/audio, - for piped stdout)\n");
   fprintf(stderr, "  -d <dir>      Create mbe data files, use this directory\n");
   fprintf(stderr, "  -r <files>    Read/Play saved mbe data from file(s)\n");
   fprintf(stderr, "  -g <num>      Audio output gain (default = 0 = auto, disable = -1)\n");
