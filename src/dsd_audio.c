@@ -377,10 +377,12 @@ void openAudioOutDevice (dsd_opts * opts, int speed)
     exit(1);
 #endif
   }
-  else if(strncmp(opts->audio_out_dev, "stdout", 6) == 0)
+  else if((strncmp(opts->audio_out_dev, "stdout", 6) == 0) || (strncmp(opts->audio_out_dev, "-", 1) == 0))
   {
-    opts->audio_out_fd = STDOUT_FILENO;
+    opts->audio_out_fd = fileno(stdout); //STDOUT_FILENO;
     opts->audio_out_type = 0;
+    fprintf(stderr, "Audio Out Device: stdout\n");
+    return;
   }
   else
   {
@@ -496,7 +498,7 @@ void openAudioInDevice (dsd_opts * opts)
   }
   else if(strncmp(opts->audio_in_dev, "stdin", 5) == 0)
   {
-    opts->audio_in_fd = STDIN_FILENO;
+    opts->audio_in_fd = fileno(stdin); //STDIN_FILENO;
     opts->audio_in_type = 0;
   }
   else if(strncmp(opts->audio_in_dev, "pa:", 3) == 0)
