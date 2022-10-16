@@ -27,6 +27,7 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
   TimeSlotVoiceSuperFrame_t * TSVoiceSupFrame = NULL;
   int *errs;
   int *errs2;
+  int PlayCurrentSlot = 1;
 
   /*
    * Currently encryption is not supported in this public version...
@@ -67,6 +68,24 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
    *
    * */
 
+  /* Check the current time slot */
+  if(state->currentslot == 0)
+  {
+    TSVoiceSupFrame = &state->TS1SuperFrame;
+
+    /* Check if we need to play the current slot */
+    if(opts->SlotToOnlyDecode == 2) PlayCurrentSlot = 0;
+    else PlayCurrentSlot = 1;
+  }
+  else
+  {
+    TSVoiceSupFrame = &state->TS2SuperFrame;
+
+    /* Check if we need to play the current slot */
+    if(opts->SlotToOnlyDecode == 1) PlayCurrentSlot = 0;
+    else PlayCurrentSlot = 1;
+  }
+
   /*
    * Play all AMBE voice samples
    * 1 DMR voice superframe = 6 DMR frames */
@@ -93,17 +112,21 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
 
       state->debug_audio_errors += *errs2;
 
-      processAudio(opts, state);
-
-      if (opts->wav_out_f != NULL)
+      /* Play the current slot only if allowed */
+      if(PlayCurrentSlot)
       {
-        writeSynthesizedVoice (opts, state);
-      }
+        processAudio(opts, state);
 
-      if (opts->audio_out == 1)
-      {
-        playSynthesizedVoice (opts, state);
-      }
+        if (opts->wav_out_f != NULL)
+        {
+          writeSynthesizedVoice (opts, state);
+        }
+
+        if (opts->audio_out == 1)
+        {
+          playSynthesizedVoice (opts, state);
+        }
+      } /* End if(PlayCurrentSlot) */
     } /* End for(i = 0; i < 3; i++) */
   } /* End for(Frame = 0; Frame < 6; Frame++) */
 } /* End ProcessDMREncryption() */

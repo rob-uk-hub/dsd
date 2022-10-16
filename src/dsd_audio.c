@@ -650,3 +650,4 @@ void openAudioInDevice (dsd_opts * opts)
     fprintf(stderr, "Audio In/Out Device: %s\n", opts->audio_in_dev);
   }
 }
+

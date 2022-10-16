@@ -872,6 +872,34 @@ char * NXDN_Cipher_Type_To_Str(uint8_t CipherType)
 } /* End NXDN_Cipher_Type_To_Str() */
 
 
+/* CRC 16 bits computation with the following polynomial :
+ * X^16 + X^12 + X^5 + 1
+ *
+ * X^16 + (0X^15 + 0X^14 + 0X^13 + 1X^12 + 0X^11 + 0X^10 + 0X^9 + 0X^8 + 0X^7 + 0X^6 + 1X^5 + 0X^4 + 0X^3 + 0X^2 + 0X^1 + 1X^0)
+ * => Polynomial = 0b0001000000100001 = 0x1021
+ */
+uint16_t CRC16BitNXDN(uint8_t * BufferIn, uint32_t BitLength)
+{
+  uint16_t CRC = 0xFFFF;      /* Initial value = All bit to '1' */
+  uint16_t Polynome = 0x1021; /* X^16 + X^12 + X^5 + 1 */
+  uint32_t i;
+
+  for(i = 0; i < BitLength; i++)
+  {
+    if(((CRC >> 15) & 1) ^ (BufferIn[i] & 1))
+    {
+      CRC = ((CRC << 1) ^ Polynome) & 0xFFFF;
+    }
+    else
+    {
+      CRC = (CRC << 1) & 0xFFFF;
+    }
+  }
+
+  return CRC;
+} /* End CRC16BitNXDN() */
+
+
 /* CRC 15 bits computation with the following polynomial :
  * X^15 + X^14 + X^11 + X^10 + X^7 + X^6 + X^2 + 1
  *

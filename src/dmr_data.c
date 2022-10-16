@@ -31,8 +31,9 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
   char bursttype[5];
   unsigned int burst;
   char info[196];
-  char SlotType[20];
-  unsigned int SlotTypeOk;
+  char SlotType[20] = {0};
+  unsigned int SlotTypeOk = 0;
+  unsigned char trellisdibits[98];
 
   /* Remove warning compiler */
   UNUSED_VARIABLE(cachdata[0]);
@@ -106,6 +107,7 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     {
       dibit = (dibit ^ 2);
     }
+    trellisdibits[i] = dibit;
     info[2*i]     = (1 & (dibit >> 1));  // bit 1
     info[(2*i)+1] = (1 & dibit);         // bit 0
   }
@@ -263,54 +265,54 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
 
   if (strcmp (bursttype, "0000") == 0)
   {
-    sprintf(state->fsubtype, " PI Header    ");
+    sprintf(state->fsubtype, " PI Header     ");
   }
   else if (strcmp (bursttype, "0001") == 0)
   {
-    sprintf(state->fsubtype, " VOICE Header ");
+    sprintf(state->fsubtype, " VOICE Header  ");
   }
   else if (strcmp (bursttype, "0010") == 0)
   {
-    sprintf(state->fsubtype, " TLC          ");
+    sprintf(state->fsubtype, " TLC           ");
   }
   else if (strcmp (bursttype, "0011") == 0)
   {
-    sprintf(state->fsubtype, " CSBK         ");
+    sprintf(state->fsubtype, " CSBK          ");
   }
   else if (strcmp (bursttype, "0100") == 0)
   {
-    sprintf(state->fsubtype, " MBC Header   ");
+    sprintf(state->fsubtype, " MBC Header    ");
   }
   else if (strcmp (bursttype, "0101") == 0)
   {
-    sprintf(state->fsubtype, " MBC          ");
+    sprintf(state->fsubtype, " MBC           ");
   }
   else if (strcmp (bursttype, "0110") == 0)
   {
-    sprintf(state->fsubtype, " DATA Header  ");
+    sprintf(state->fsubtype, " DATA Header   ");
   }
   else if (strcmp (bursttype, "0111") == 0)
   {
-    sprintf(state->fsubtype, " RATE 1/2 DATA");
+    sprintf(state->fsubtype, " RATE 1/2 DATA ");
   }
   else if (strcmp (bursttype, "1000") == 0)
   {
-    sprintf(state->fsubtype, " RATE 3/4 DATA");
+    sprintf(state->fsubtype, " RATE 3/4 DATA ");
   }
   else if (strcmp (bursttype, "1001") == 0)
   {
-    sprintf(state->fsubtype, " Slot idle    ");
+    sprintf(state->fsubtype, " Slot idle     ");
   }
   else if (strcmp (bursttype, "1010") == 0)
   {
-    sprintf(state->fsubtype, " Rate 1 DATA  ");
+    sprintf(state->fsubtype, " Rate 1 DATA   ");
   }
   else
   {
-    sprintf(state->fsubtype, "              ");
+    sprintf(state->fsubtype, "               ");
   }
 
-  // Current slot - First half - Data Payload - 1st part
+  // Current slot - Second half - Data Payload - 2nd part
   for (i = 0; i < 49; i++)
   {
     dibit = getDibit(opts, state);
@@ -318,6 +320,7 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     {
       dibit = (dibit ^ 2);
     }
+    trellisdibits[i + 49] = dibit;
     info[(2*i) + 98] = (1 & (dibit >> 1));  // bit 1
     info[(2*i) + 99] = (1 & dibit);         // bit 0
   }
@@ -369,6 +372,7 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     /* Burst = CSBK */
     case 0b0011:
     {
+      ProcessDmrCSBK(opts, state, (uint8_t *)info, (uint8_t *)syncdata, (uint8_t *)SlotType);
       break;
     }
 
@@ -387,18 +391,21 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     /* Burst = DATA Header */
     case 0b0110:
     {
+      ProcessDmrDataHeader(opts, state, (uint8_t *)info, (uint8_t *)syncdata, (uint8_t *)SlotType);
       break;
     }
 
     /* Burst = RATE 1/2 DATA */
     case 0b0111:
     {
+      ProcessDmr12Data(opts, state, (uint8_t *)info, (uint8_t *)syncdata, (uint8_t *)SlotType);
       break;
     }
 
     /* Burst = RATE 3/4 DATA */
     case 0b1000:
     {
+      ProcessDmr34Data(opts, state, (uint8_t *)trellisdibits, (uint8_t *)syncdata, (uint8_t *)SlotType);
       break;
     }
 

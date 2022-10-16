@@ -47,6 +47,7 @@ extern "C" {
 #include <math.h>
 #include <mbelib.h>
 #include <sndfile.h>
+#include <stdbool.h>
 
 #include "p25p1_heuristics.h"
 
@@ -57,11 +58,6 @@ extern "C" {
 #define SAMPLE_RATE_IN 48000
 #define SAMPLE_RATE_OUT 8000
 
-#define true  1u
-#define false 0u
-
-typedef unsigned char bool;
-
 /* Could only be 2 or 4 */
 #define NB_OF_DPMR_VOICE_FRAME_TO_DECODE 2
 
@@ -70,7 +66,7 @@ typedef unsigned char bool;
 
 
 #ifdef USE_PORTAUDIO
-#include "portaudio.h"
+#include <portaudio.h>
 #define PA_FRAMES_PER_BUFFER 64
 //Buffer needs to be large enough to prevent input buffer overruns while DSD is doing other struff (like outputting voice)
 //else you get skipped samples which result in incomplete/erronous decodes and a mountain of error messages.
@@ -100,7 +96,8 @@ enum
   MODE_ENHANCED_PRIVACY_AES256,
   MODE_HYTERA_BASIC_40_BIT,
   MODE_HYTERA_BASIC_128_BIT,
-  MODE_HYTERA_BASIC_256_BIT
+  MODE_HYTERA_BASIC_256_BIT,
+  MODE_HYTERA_FULL_ENCRYPT
 };
 
 
@@ -162,13 +159,91 @@ typedef struct
 {
   unsigned int  ProtectFlag;
   unsigned int  Reserved;
+  unsigned int  LastBlock;
   unsigned int  FullLinkControlOpcode;
+  unsigned int  FullLinkCSBKOpcode;
   unsigned int  FeatureSetID;
   unsigned int  ServiceOptions;
   unsigned int  GroupAddress;      /* Destination ID or TG (in Air Interface format) */
+  unsigned int  GroupAddressCSBK[6]; /* Destination ID or TG applicable for CSBK Cap+ frames */
   unsigned int  SourceAddress;     /* Source ID (in Air Interface format) */
+  unsigned int  GPSReserved;       /* 4 bits GPS reserved field */
+  unsigned int  GPSPositionError;  /* 3 bits GPS position error */
+  unsigned int  GPSLongitude;
+  unsigned int  GPSLatitude;
+  unsigned int  TalkerAliasHeaderDataFormat;
+  unsigned int  TalkerAliasHeaderDataLength;
+  unsigned char TalkerAliasHeaderData[49];
+  unsigned char TalkerAliasBlock1Data[56];
+  unsigned char TalkerAliasBlock2Data[56];
+  unsigned char TalkerAliasBlock3Data[56];
+  unsigned char FullLinkData[96];  /* 72 bits of LC data + 5 bits CRC or 96 bits of LC data + 16 bits CRC */
+  unsigned int  RestChannel;
+  unsigned int  ActiveChannel1;
+  unsigned int  ActiveChannel2;
   unsigned int  DataValidity;      /* 0 = All Full LC data are incorrect ; 1 = Full LC data are correct (CRC checked OK) */
 }FullLinkControlPDU_t;
+
+
+typedef struct
+{
+  /* Data header data */
+  char  DataHeaderBit[96];
+  int   GroupDataCall;                  /* 1 = Group call ; 0 = Individual call */
+  int   ResponseRequested;
+  int   AppendedBlocks;
+  int   DataPacketFormat;
+  int   PadOctetCount;
+  int   SAPIdentifier;
+  int   DestinationLogicalLinkID;
+  int   SourceLogicalLinkID;
+  int   FullMessageFlag;
+  int   BlocksToFollow;
+  int   ReSyncronizeFlag;
+  int   SendSequenceNumber;
+  int   FragmentSequenceNumber;
+
+  /* Specific to data header block for response packet */
+  int   Class;
+  int   Type;
+  int   Status;
+
+  /* Specific to proprietary header */
+  int   MFID;
+  char  ProprietaryData[8];
+
+  /* Specific to status/precoded short data header or raw short data packet header */
+  int   SourcePort;
+  int   DestinationPort;
+  int   StatusPrecoded;                   /* Available only on status/precoded short data header */
+  int   SelecriveAutomaticRepeatReQuest;  /* Available only on raw short data packet header */
+  int   BitPadding;
+
+  /* Specific to defined short data packet header */
+  int   DefinedData;
+
+  /* Specific to Unified Data Transport (UDT) data header */
+  int   UDTFormat;
+  int   PadNibble;
+  int   SupplementaryFlag;
+  int   ProtectFlag;
+  int   UDTOpcode;
+
+  /* Rate 1/2 data */
+  int   Rate12NbOfReceivedBlock;
+  char  Rate12DataBit[12192];                      /* May carry up to 127 blocks of 96 bits (total 1524 bytes) of rate 1/2 data */
+  short Rate12DataWordBigEndian[762];              /* May carry up to 127 blocks of 96 bits (total 762 word) of rate 1/2 data (stored into 16 bit big endian format) */
+  char  Rate12DataBitBigEndianUnconfirmed[12192];  /* May carry up to 127 blocks of 96 bits (total 1500 bytes) of unconfirmed rate 1/2 data (stored as 16 bit big endian format) */
+  char  Rate12DataBitBigEndianConfirmed[10160];    /* May carry up to 127 blocks of 80 bits (total 1250 bytes) of confirmed rate 1/2 data (stored as 16 bit big endian format) */
+
+  /* Rate 3/4 data */
+  int   Rate34NbOfReceivedBlock;
+  char  Rate34DataBit[18288];                      /* May carry up to 127 blocks of 144 bits (total 2286 bytes) of rate 3/4 data */
+  short Rate34DataWordBigEndian[1143];             /* May carry up to 127 blocks of 144 bits (total 1143 word) of rate 3/4 data (stored into 16 bit big endian format) */
+  char  Rate34DataBitBigEndianUnconfirmed[18288];  /* May carry up to 127 blocks of 144 bits (total 2286 bytes) of unconfirmed rate 3/4 data (stored as 16 bit big endian format) */
+  char  Rate34DataBitBigEndianConfirmed[16256];    /* May carry up to 127 blocks of 128 bits (total 2032 bytes) of confirmed rate 3/4 data (stored as 16 bit big endian format) */
+
+} DMRDataPDU_t;
 
 
 typedef struct
@@ -177,6 +252,7 @@ typedef struct
   TimeSlotDeinterleavedVoiceFrame_t TimeSlotDeinterleavedVoiceFrame[6];
   TimeSlotAmbeVoiceFrame_t TimeSlotAmbeVoiceFrame[6];
   FullLinkControlPDU_t FullLC;
+  DMRDataPDU_t Data;
 } TimeSlotVoiceSuperFrame_t;
 
 
@@ -374,6 +450,9 @@ typedef struct
 
   int EncryptionMode;
 
+
+  int  SlotToOnlyDecode;  /* 1 = Decode only slot 1 ; 0 = Decode only slot 2 */
+
 } dsd_opts;
 
 typedef struct
@@ -508,7 +587,7 @@ typedef struct
   int special_display_format_enable;  // Format used to decrypt EP keys
   int display_raw_data;  // Data displayed unencrypted
 
-  NxdnSacchRawPart_t NxdnSacchRawPart[4];
+  NxdnSacchRawPart_t  NxdnSacchRawPart[4];
   NxdnFacch1RawPart_t NxdnFacch1RawPart[2];
   NxdnFacch2RawPart_t NxdnFacch2RawPart;
   NxdnElementsContent_t NxdnElementsContent;
@@ -787,6 +866,7 @@ void NXDN_decode_VCALL_IV(dsd_opts * opts, dsd_state * state, uint8_t * Message)
 char * NXDN_Call_Type_To_Str(uint8_t CallType);
 void NXDN_Voice_Call_Option_To_Str(uint8_t VoiceCallOption, uint8_t * Duplex, uint8_t * TransmissionMode);
 char * NXDN_Cipher_Type_To_Str(uint8_t CipherType);
+uint16_t CRC16BitNXDN(uint8_t * BufferIn, uint32_t BitLength);
 uint16_t CRC15BitNXDN(uint8_t * BufferIn, uint32_t BitLength);
 uint16_t CRC12BitNXDN(uint8_t * BufferIn, uint32_t BitLength);
 uint8_t CRC6BitNXDN(uint8_t * BufferIn, uint32_t BitLength);
@@ -900,11 +980,41 @@ uint32_t BPTC_16x2_Extract_Data(uint8_t InputInterleavedData[32], uint8_t DMRDat
 void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
 void ProcessDmrTerminaisonLC(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
 void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state);
+void ProcessDmrCSBK(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
+void ProcessDmrDataHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
+void ProcessDmr12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
+void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], uint8_t syncdata[48], uint8_t SlotType[20]);
 uint16_t ComputeCrcCCITT(uint8_t * DMRData);
 uint32_t ComputeAndCorrectFullLinkControlCrc(uint8_t * FullLinkControlDataBytes, uint32_t * CRCComputed, uint32_t CRCMask);
 uint8_t ComputeCrc5Bit(uint8_t * DMRData);
+uint16_t ComputeCrc9Bit(uint8_t * DMRData, uint32_t NbData);
+uint32_t ComputeCrc32Bit(uint8_t * DMRData, uint32_t NbData);
 uint8_t * DmrAlgIdToStr(uint8_t AlgID);
 uint8_t * DmrAlgPrivacyModeToStr(uint32_t PrivacyMode);
+
+
+/* DMR Link control (LC) management functions */
+void DmrLinkControlInitLib(void);
+void DmrFullLinkControlDecode(uint8_t InputLCDataBit[96], FullLinkControlPDU_t * FullLCOutputStruct, int VoiceCallInProgress, int CSBKContent);
+void PrintDmrGpsPositionFromLinkControlData(unsigned int GPSLongitude,
+                                           unsigned int GPSLatitude,
+                                           unsigned int GPSPositionError);
+void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataFormat,
+                                            unsigned int  TalkerAliasHeaderDataLength,
+                                            unsigned char TalkerAliasHeaderData[49],
+                                            unsigned char TalkerAliasBlock1Data[56],
+                                            unsigned char TalkerAliasBlock2Data[56],
+                                            unsigned char TalkerAliasBlock3Data[56]);
+void DmrBackupLinkControlData(dsd_opts * opts, dsd_state * state);
+void DmrRestoreLinkControlData(dsd_opts * opts, dsd_state * state);
+
+
+/* DMR data (rate 1/2 , rate 3/4 , rate 1) management */
+void DmrDataContentInitLib(void);
+void DmrDataHeaderDecode(uint8_t InputDataBit[96], DMRDataPDU_t * DMRDataStruct);
+char * DmrDataServiceAccessPointIdentifierToStr(int ServiceAccessPointIdentifier);
+void DmrBackupReceivedData(dsd_opts * opts, dsd_state * state);
+void DmrRestoreReceivedData(dsd_opts * opts, dsd_state * state);
 
 
 /* Read Solomon (12,9) functions */
@@ -912,6 +1022,21 @@ void rs_12_9_calc_syndrome(rs_12_9_codeword_t *codeword, rs_12_9_poly_t *syndrom
 uint8_t rs_12_9_check_syndrome(rs_12_9_poly_t *syndrome);
 rs_12_9_correct_errors_result_t rs_12_9_correct_errors(rs_12_9_codeword_t *codeword, rs_12_9_poly_t *syndrome, uint8_t *errors_found);
 rs_12_9_checksum_t *rs_12_9_calc_checksum(rs_12_9_codeword_t *codeword);
+
+
+
+
+// Trellis library
+bool CDMRTrellis_decode(const unsigned char* data, unsigned char* payload);
+void CDMRTrellis_encode(const unsigned char* payload, unsigned char* data);
+void CDMRTrellis_deinterleave(const unsigned char* data, signed char* dibits);
+void CDMRTrellis_interleave(const signed char* dibits, unsigned char* data);
+void CDMRTrellis_dibitsToPoints(const signed char* dibits, unsigned char* points);
+void CDMRTrellis_pointsToDibits(const unsigned char* points, signed char* dibits);
+void CDMRTrellis_bitsToTribits(const unsigned char* payload, unsigned char* tribits);
+void CDMRTrellis_tribitsToBits(const unsigned char* tribits, unsigned char* payload);
+bool CDMRTrellis_fixCode(unsigned char* points, unsigned int failPos, unsigned char* payload);
+unsigned int CDMRTrellis_checkCode(const unsigned char* points, unsigned char* tribits);
 
 
 #ifdef __cplusplus

@@ -177,11 +177,13 @@ void initOpts (dsd_opts * opts)
 
   opts->EncryptionMode = MODE_UNENCRYPTED;
 
+
+  opts->SlotToOnlyDecode = 0;
+
 } /* End initOpts() */
 
 void initState (dsd_state * state)
 {
-
   int i, j;
 
   state->dibit_buf    = malloc (sizeof (int) * 1000000);
@@ -386,6 +388,10 @@ void usage(void)
   fprintf(stderr, "                 (default=36)\n");
   fprintf(stderr, "  -M <num>      Min/Max buffer size for QPSK decision point tracking\n");
   fprintf(stderr, "                 (default=15)\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Audio synthesize options:\n");
+  fprintf(stderr, "  -1            Synthesize audio for first DMR timeslot\n");
+  fprintf(stderr, "  -2            Synthesize audio for second DMR timeslot\n");
   fprintf(stderr, "\n");
 #ifdef BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY
   fprintf(stderr, "Others options:\n");
@@ -608,13 +614,19 @@ int main (int argc, char **argv)
   initOpts (&opts);
   initState (&state);
 
+  /* Init DMR Link Control (LC) management library */
+  DmrLinkControlInitLib();
+
+  /* Init DMR data management library */
+  DmrDataContentInitLib();
+
   /* Init all Golay and Hamming check functions */
   InitAllFecFunction();
 
   exitflag = 0;
   signal (SIGINT, sigfun);
 
-  while ((c = getopt (argc, argv, "haep:qstv:z:i:o:d:g:nw:B:C:R:f:m:u:x:A:S:M:rlD:N:")) != -1)
+  while ((c = getopt (argc, argv, "haep:qstv:z:i:o:d:g:nw:B:C:R:f:m:u:x:A:S:M:rlD:N:12")) != -1)
   {
     opterr = 0;
     switch (c)
@@ -1010,6 +1022,18 @@ int main (int argc, char **argv)
 
           break;
         } /* End case 'N' */
+      }
+      case '1':
+      {
+        opts.SlotToOnlyDecode = 1;
+        fprintf(stderr, "Synthesize audio for first DMR timeslot\n");
+        break;
+      }
+      case '2':
+      {
+        opts.SlotToOnlyDecode = 2;
+        fprintf(stderr, "Synthesize audio for second DMR timeslot\n");
+        break;
       }
       default:
         usage ();

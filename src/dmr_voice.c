@@ -35,6 +35,12 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
   char cc[4];
   unsigned char EmbeddedSignalling[16];
   unsigned int EmbeddedSignallingOk;
+  char SlotType[20];
+  unsigned int SlotTypeOk = 0;
+  char bursttype[5];
+  int decode_next_slot = 0;
+  int interrupt_current_slot_decoding = 0;
+  int voice_sync_next_slot_detected = 0;
 
   /* Remove warning compiler */
   UNUSED_VARIABLE(ambe_fr[0][0]);
@@ -48,9 +54,15 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
   char cachbits[25];12
 #endif
 
+  /* Backup Link Control data that need to be saved */
+  DmrBackupLinkControlData(opts, state);
+
   /* Init the superframe buffers */
   memset(&state->TS1SuperFrame, 0, sizeof(TimeSlotVoiceSuperFrame_t));
   memset(&state->TS2SuperFrame, 0, sizeof(TimeSlotVoiceSuperFrame_t));
+
+  /* Restore Link control Data that need to be restored */
+  DmrRestoreLinkControlData(opts, state);
 
   /* Init the color code status */
   state->color_code_ok = 0;
@@ -58,11 +70,12 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
   mutecurrentslot = 0;
   msMode = 0;
 
-  dibit_p = state->dibit_buf_p - 144;
+  dibit_p = state->dibit_buf_p - 139;
+
   for(j = 0; j < 6; j++)
   {
-    // 2nd half of previous slot
-    for(i = 0; i < 54; i++)
+    // 2nd half of previous slot (98 data bits after last "Slot Type" part)
+    for(i = 0; i < 49; i++)
     {
       if(j > 0)
       {
@@ -107,6 +120,9 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
           state->slot1light[6] = ']';
           state->slot2light[0] = ' ';
           state->slot2light[6] = ' ';
+
+          if(opts->SlotToOnlyDecode == 2) decode_next_slot = 1;
+          else decode_next_slot = 0;
         }
         else
         {
@@ -114,6 +130,9 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
           state->slot2light[6] = ']';
           state->slot1light[0] = ' ';
           state->slot1light[6] = ' ';
+
+          if(opts->SlotToOnlyDecode == 1) decode_next_slot = 1;
+          else decode_next_slot = 0;
         }
       }
     }
@@ -510,19 +529,48 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
 #endif
 
 
-    // next slot
-    skipDibit (opts, state, 54);
+    // Next slot (only 98 first bits)
+    skipDibit (opts, state, 49);
 
-    // signaling data or sync
+    // Next slot : Slot Type (first part)
+    for(i = 0; i < 5; i++)
+    {
+      dibit = getDibit(opts, state);
+      if(opts->inverted_dmr == 1)
+      {
+        dibit = (dibit ^ 2);
+      }
+      SlotType[i * 2] = (1 & (dibit >> 1)); // bit 1
+      SlotType[i * 2] = (1 & dibit);        // bit 0
+    }
+
+    // Next slot : Signaling data or sync
     for(i = 0; i < 24; i++)
     {
       dibit = getDibit(opts, state);
+      if(opts->inverted_dmr == 1)
+      {
+        dibit = (dibit ^ 2);
+      }
       syncdata[i] = dibit;
       sync[i] = (dibit | 1) + 48;
     }
     sync[24] = 0;
     syncdata[24] = 0;
 
+    // Next slot : Slot Type (last part)
+    for(i = 0; i < 5; i++)
+    {
+      dibit = getDibit(opts, state);
+      if(opts->inverted_dmr == 1)
+      {
+        dibit = (dibit ^ 2);
+      }
+      SlotType[(i * 2) + 10] = (1 & (dibit >> 1)); // bit 1
+      SlotType[(i * 2) + 10] = (1 & dibit);        // bit 0
+    }
+
+    /* Check SYNC of 2nd slot */
     if((strcmp (sync, DMR_BS_DATA_SYNC) == 0) || (msMode == 1))
     {
       state->directmode = 0;
@@ -533,6 +581,32 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       else
       {
         sprintf(state->slot1light, " slot1 ");
+      }
+
+      /* Check and correct the SlotType (apply Golay(20,8) FEC check) */
+      if(Golay_20_8_decode((unsigned char *)SlotType)) SlotTypeOk = 1;
+      else SlotTypeOk = 0;
+
+      /* Reconstitute the burst type*/
+      bursttype[0] = SlotType[4] + '0';
+      bursttype[1] = SlotType[5] + '0';
+      bursttype[2] = SlotType[6] + '0';
+      bursttype[3] = SlotType[7] + '0';
+      bursttype[4] = '\0';
+
+      /* When PI Header or Voice Header detected on other slot, check if we
+       * shall change the decoding slot */
+      if ((strcmp (bursttype, "0000") == 0) || /* PI HEADER */
+          (strcmp (bursttype, "0001") == 0))   /* VOICE Header */
+      {
+        /* Check if we need to decode this slot, if yes
+         * go on to the processDMRdata() function */
+        if(decode_next_slot && SlotTypeOk)
+        {
+          /* Interrupt the decoding of the current slot */
+          interrupt_current_slot_decoding = 1;
+
+        }
       }
     }
     else if(strcmp (sync, DMR_BS_VOICE_SYNC) == 0)
@@ -546,18 +620,43 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       {
         sprintf(state->slot1light, " SLOT1 ");
       }
+      /* Check if we need to decode this slot, if yes
+       * go on to the processDMRvoice() function */
+      if(decode_next_slot)
+      {
+        interrupt_current_slot_decoding = 1;
+        voice_sync_next_slot_detected = 1;
+      }
     }
     else if((strcmp (sync, DMR_DIRECT_MODE_TS1_VOICE_SYNC) == 0) || (strcmp (sync, DMR_DIRECT_MODE_TS1_DATA_SYNC) == 0))
     {
       state->currentslot = 0;
       state->directmode = 1; /* Direct mode */
       sprintf(state->slot1light, " sLoT1 ");
+
+      /* Check if we need to decode this slot, if yes
+       * go on to the processDMRvoice() function */
+      if(decode_next_slot)
+      {
+        /* Interrupt the decoding of the current slot */
+        interrupt_current_slot_decoding = 1;
+        voice_sync_next_slot_detected = 1;
+      }
     }
     else if((strcmp (sync, DMR_DIRECT_MODE_TS2_VOICE_SYNC) == 0) || (strcmp (sync, DMR_DIRECT_MODE_TS2_DATA_SYNC) == 0))
     {
       state->currentslot = 1;
       state->directmode = 1; /* Direct mode */
       sprintf(state->slot1light, " sLoT2 ");
+
+      /* Check if we need to decode this slot, if yes
+       * go on to the processDMRvoice() function */
+      if(decode_next_slot)
+      {
+        /* Interrupt the decoding of the current slot */
+        interrupt_current_slot_decoding = 1;
+        voice_sync_next_slot_detected = 1;
+      }
     }
 
 #ifdef DMR_DUMP
@@ -574,10 +673,68 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
     fprintf(stderr, "%s ", syncbits);
 #endif
 
+    if(interrupt_current_slot_decoding)
+    {
+      // 2nd half next slot (98 data bits after last "Slot Type" part)
+      skipDibit (opts, state, 49);
+
+      if(voice_sync_next_slot_detected)
+      {
+        /* Loop until the next Voice SYNC is detected */
+        for(i = 0; i < 5; i++)
+        {
+          // CACH
+          skipDibit (opts, state, 12);
+
+          // first half current slot
+          skipDibit (opts, state, 54);
+
+          // SYNC current slot
+          skipDibit (opts, state, 24);
+
+          // second half current slot
+          skipDibit (opts, state, 54);
+
+          // CACH
+          skipDibit (opts, state, 12);
+
+          // first half next slot
+          skipDibit (opts, state, 54);
+
+          // SYNC next slot
+          skipDibit (opts, state, 24);
+
+          // second half next slot
+          skipDibit (opts, state, 54);
+        }
+      } /* End if(voice_sync_next_slot_detected) */
+
+      // CACH
+      skipDibit (opts, state, 12);
+
+      // first half current slot
+      skipDibit (opts, state, 54);
+
+      // SYNC current slot
+      skipDibit (opts, state, 24);
+
+      // second half current slot
+      skipDibit (opts, state, 54);
+
+      // CACH
+      skipDibit (opts, state, 12);
+
+      // first half next slot
+      skipDibit (opts, state, 54);
+
+      /* Exit the "for" loop */
+      break;
+    } /* End if(interrupt_current_slot_decoding) */
+
     if(j == 5)
     {
-      // 2nd half next slot
-      skipDibit (opts, state, 54);
+      // 2nd half next slot (98 data bits after last "Slot Type" part)
+      skipDibit (opts, state, 49);
 
       // CACH
       skipDibit (opts, state, 12);
@@ -623,7 +780,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
     if(state->color_code_ok) fprintf(stderr, "(OK)      |");
     else fprintf(stderr, "(CRC ERR) |");
 
-    fprintf(stderr, " VOICE e:");
+    fprintf(stderr, " VOICE         ");
   }
 
   /* Perform the SYNC DMR data embedded decoding */

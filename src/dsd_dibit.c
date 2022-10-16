@@ -172,7 +172,7 @@ static void use_symbol (dsd_opts* opts, dsd_state* state, int symbol)
   }
 
   // Increase sidx
-  if (state->sidx == (opts->ssize - 1))
+  if (state->sidx >= (opts->ssize - 1))
   {
     state->sidx = 0;
 
