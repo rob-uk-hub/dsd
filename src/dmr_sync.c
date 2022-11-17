@@ -21,8 +21,143 @@
 //#define PRINT_VOICE_LC_HEADER_BYTES
 //#define PRINT_TERMINAISON_LC_BYTES
 //#define PRINT_VOICE_BURST_BYTES
+//#define PRINT_DATA_HEADER_BYTES
 //#define PRINT_RATE_12_DATA_BYTES
 //#define PRINT_RATE_34_DATA_BYTES
+
+
+
+
+void ProcessDmrPiHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20])
+{
+  uint32_t i, j, k;
+  uint16_t CRCExtracted     = 0;
+  uint16_t CRCComputed      = 0;
+  uint32_t CRCCorrect       = 0;
+  uint32_t IrrecoverableErrors = 0;
+  uint8_t  DeInteleavedData[196];
+  uint8_t  DmrDataBit[96];
+  uint8_t  DmrDataByte[12];
+  uint8_t  R[3];
+  uint8_t  BPTCReservedBits = 0;
+
+  /* Remove warning compiler */
+  UNUSED_VARIABLE(state);
+  UNUSED_VARIABLE(syncdata[0]);
+  UNUSED_VARIABLE(SlotType[0]);
+  UNUSED_VARIABLE(BPTCReservedBits);
+  CRCExtracted = 0;
+  CRCComputed = 0;
+  IrrecoverableErrors = 0;
+
+  /* Deinterleave DMR data */
+  BPTCDeInterleaveDMRData(info, DeInteleavedData);
+
+  /* Extract the BPTC 196,96 DMR data */
+  IrrecoverableErrors = BPTC_196x96_Extract_Data(DeInteleavedData, DmrDataBit, R);
+
+  /* Fill the reserved bit (R(0)-R(2) of the BPTC(196,96) block) */
+  BPTCReservedBits = (R[0] & 0x01) | ((R[1] << 1) & 0x02) | ((R[2] << 2) & 0x08);
+
+  /* Fill the CRC extracted */
+  CRCExtracted = 0;
+  for(i = 0; i < 16; i++)
+  {
+    CRCExtracted = CRCExtracted << 1;
+    CRCExtracted = CRCExtracted | (uint32_t)(DmrDataBit[i + 80] & 1);
+  }
+
+  /* Apply the CRC mask (see DMR standard B.3.12 Data Type CRC Mask) */
+  CRCExtracted = CRCExtracted ^ 0x6969;
+
+  /* Compute the CRC based on the received data */
+  CRCComputed = ComputeCrcCCITT(DmrDataBit);
+
+  /* Check the CRCs */
+  if(CRCExtracted == CRCComputed)
+  {
+    /* CRCs are equal => Good ! */
+    CRCCorrect = 1;
+  }
+  else
+  {
+    /* CRCs different => Error */
+    CRCCorrect = 0;
+  }
+
+  /* Convert the 96 bit of PI Header data into 12 bytes */
+  k = 0;
+  for(i = 0; i < 12; i++)
+  {
+    DmrDataByte[i] = 0;
+    for(j = 0; j < 8; j++)
+    {
+      DmrDataByte[i] = DmrDataByte[i] << 1;
+      DmrDataByte[i] = DmrDataByte[i] | (DmrDataBit[k] & 0x01);
+      k++;
+    }
+  }
+
+  /* Display the PI header content */
+  fprintf(stderr, "| [Data=%02X", DmrDataByte[0] & 0xFF);
+  for(i = 1; i < 10; i++) fprintf(stderr, "-%02X", DmrDataByte[i] & 0xFF);
+  fprintf(stderr, " CRC=0x%04X] ", CRCExtracted);
+
+  if((IrrecoverableErrors == 0) && CRCCorrect)
+  {
+    fprintf(stderr, "(OK)");
+  }
+  else if(IrrecoverableErrors == 0)
+  {
+    fprintf(stderr, "RAS (FEC OK/CRC ERR)");
+  }
+  else fprintf(stderr, "(FEC FAIL/CRC ERR)");
+
+#ifdef PRINT_PI_HEADER_BYTES
+  fprintf(stderr, "\n");
+  fprintf(stderr, "PI HEADER : ");
+  for(i = 0; i < 12; i++)
+  {
+    fprintf(stderr, "0x%02X", DmrDataByte[i]);
+    if(i != 11) fprintf(stderr, " - ");
+  }
+
+  fprintf(stderr, "\n");
+
+  fprintf(stderr, "BPTC(196,96) Reserved bit R(0)-R(2) = 0x%02X\n", BPTCReservedBits);
+
+  /* Print the Key ID validity */
+  if((IrrecoverableErrors == 0) && CRCCorrect) fprintf(stderr, "(valid) - ");
+  else if(IrrecoverableErrors == 0) fprintf(stderr, "RAS (FEC OK/CRC ERR) - ");
+  else fprintf(stderr, "(FEC FAIL/CRC ERR) - ");
+
+  /* Print the IV validity */
+  if((IrrecoverableErrors == 0) && CRCCorrect) fprintf(stderr, "(valid) - ");
+  else if(IrrecoverableErrors == 0) fprintf(stderr, "RAS (FEC OK/CRC ERR) - ");
+  else fprintf(stderr, "(FEC FAIL/CRC ERR) - ");
+
+  /* Print the IV validity */
+  if((IrrecoverableErrors == 0) && CRCCorrect) fprintf(stderr, "(valid)");
+  else if(IrrecoverableErrors == 0) fprintf(stderr, "RAS (FEC OK/CRC ERR) - ");
+  else fprintf(stderr, "(FEC FAIL/CRC ERR) - ");
+
+  fprintf(stderr, "\n");
+
+  fprintf(stderr, "CRC extracted = 0x%04X - CRC computed = 0x%04X - ", CRCExtracted, CRCComputed);
+
+  if(CRCCorrect)
+  {
+    fprintf(stderr, "CRCs are equal !\n");
+  }
+  else
+  {
+    fprintf(stderr, "ERROR !!! CRCs are different !\n");
+  }
+
+  fprintf(stderr, "Hamming Irrecoverable Errors = %u\n",
+         IrrecoverableErrors);
+#endif /* PRINT_PI_HEADER_BYTES */
+} /* End ProcessDmrPiHeader() */
 
 
 void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20])
@@ -202,7 +337,7 @@ void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[19
   }
   else if(IrrecoverableErrors == 0)
   {
-    else fprintf(stderr, "FEC correctly corrected but CRCs are incorrect\n");
+    fprintf(stderr, "FEC correctly corrected but CRCs are incorrect\n");
   }
   else
   {
@@ -367,7 +502,7 @@ void ProcessDmrTerminaisonLC(dsd_opts * opts, dsd_state * state, uint8_t info[19
   }
   else if(IrrecoverableErrors == 0)
   {
-    else fprintf(stderr, "FEC correctly corrected but CRCs are incorrect\n");
+    fprintf(stderr, "FEC correctly corrected but CRCs are incorrect\n");
   }
   else
   {
@@ -393,6 +528,10 @@ void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state)
   uint8_t  CRCExtracted;
   uint8_t  CRCComputed;
   uint32_t CRCCorrect = 0;
+  uint8_t  ReverseChannel[32];
+  uint32_t NonReverseChannelSingleBurstIrrecoverableErrors;
+  uint32_t ReverseChannelWord;
+  uint8_t  EmbeddedSyncVoiceBurstFInterleaved[32];
 
   /* Remove warning compiler */
   UNUSED_VARIABLE(opts);
@@ -458,6 +597,19 @@ void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state)
   if(CRCExtracted == CRCComputed) CRCCorrect = 1;
   else CRCCorrect = 0;
 
+  /* Decode 6th voice burst embedded (voice burst F) */
+  for(i = 0; i < 32; i++) EmbeddedSyncVoiceBurstFInterleaved[i] = (uint8_t)TSVoiceSupFrame->TimeSlotRawVoiceFrame[5].Sync[i + 8] & 1;
+  NonReverseChannelSingleBurstIrrecoverableErrors = BPTC_16x2_Extract_Data(EmbeddedSyncVoiceBurstFInterleaved, ReverseChannel, 0);
+
+  /* Reconstitue the 11 bit word of the voice burst F / Reverse Channel burst */
+  ReverseChannelWord = 0;
+  for(i = 0; i < 11; i++)
+  {
+    ReverseChannelWord <<= 1;
+    ReverseChannelWord |= (uint32_t )ReverseChannel[i] & 1;
+  }
+
+  //fprintf(stderr, "RC = 0x%03X - RC Errors = %u ", ReverseChannelWord, NonReverseChannelSingleBurstIrrecoverableErrors);
 
   /* Decode the content of the Link Control message */
   DmrFullLinkControlDecode(LC_DataBit, &TSVoiceSupFrame->FullLC, 1, 0);
@@ -685,7 +837,8 @@ void ProcessDmrDataHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196],
   }
 
   /* Clear all previous data received before */
-  memset(&TSVoiceSupFrame->Data, 0, sizeof(DMRDataPDU_t));
+  //memset(&TSVoiceSupFrame->Data, 0, sizeof(DMRDataPDU_t));
+  DmrClearPreviouslyReceivedData(&TSVoiceSupFrame->Data);
 
   /* Initialize Block ID */
   TSVoiceSupFrame->Data.Rate12NbOfReceivedBlock = 0;
@@ -742,12 +895,14 @@ void ProcessDmrDataHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196],
   /* Decode the content of the data header message */
   DmrDataHeaderDecode(DmrDataBit, &TSVoiceSupFrame->Data);
 
+#ifdef PRINT_DATA_HEADER_BYTES
   fprintf(stderr, "| Data=0x%02X", DmrDataByte[0] & 0xFF);
   for(i = 1; i < 12; i++)
   {
     fprintf(stderr, "-0x%02X", DmrDataByte[i] & 0xFF);
   }
   fprintf(stderr, "  ");
+#endif
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
@@ -1115,66 +1270,6 @@ void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], u
   fprintf(stderr, "Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
 #endif /* PRINT_RATE_34_DATA_BYTES */
 } /* End ProcessDmr34Data() */
-
-
-#if defined(BUILD_DSD_WITH_HYTERA_BASIC_PRIVACY)
-/* Set the encryption type based on the FID */
-void SetDmrEncryptionType(dsd_opts * opts, dsd_state * state)
-{
-  TimeSlotVoiceSuperFrame_t * TSVoiceSupFrame = NULL;
-
-  /* Remove warning compiler */
-  UNUSED_VARIABLE(opts);
-
-  /* Check the current time slot */
-  if(state->currentslot == 0)
-  {
-    TSVoiceSupFrame = &state->TS1SuperFrame;
-  }
-  else
-  {
-    TSVoiceSupFrame = &state->TS2SuperFrame;
-  }
-
-  if(TSVoiceSupFrame->FullLC.DataValidity)
-  {
-    switch(TSVoiceSupFrame->FullLC.FeatureSetID)
-    {
-      /* FID = 0x68 ==> Hytera Basic Privacy */
-      case 0x68:
-      {
-        /* Check if the Hytera 40 bit basic key is used */
-        if(opts->dmr_Hytera_basic_enc_key_size == 40)
-        {
-          opts->EncryptionMode = MODE_HYTERA_BASIC_40_BIT;
-        }
-        /* Check if the Hytera 128 bit basic key is used */
-        else if(opts->dmr_Hytera_basic_enc_key_size == 128)
-        {
-          opts->EncryptionMode = MODE_HYTERA_BASIC_128_BIT;
-        }
-        /* Check if the Hytera 256 bit basic key is used */
-        else if(opts->dmr_Hytera_basic_enc_key_size == 256)
-        {
-          opts->EncryptionMode = MODE_HYTERA_BASIC_256_BIT;
-        }
-        else
-        {
-          /* 40 bits key by default */
-          opts->EncryptionMode = MODE_HYTERA_BASIC_40_BIT;
-        }
-        break;
-      } /* End case 0x68 */
-
-      default:
-      {
-        /* Unknown FID, nothing to do */
-        break;
-      }
-    }
-  } /* End if(TSVoiceSupFrame->FullLC.DataValidity) */
-} /* End SetDmrEncryptionType() */
-#endif /* #if defined(BUILD_DSD_WITH_HYTERA_BASIC_PRIVACY) */
 
 
 /*

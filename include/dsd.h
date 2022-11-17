@@ -973,10 +973,11 @@ extern const uint8_t BPTCDeInterleavingIndex[196];
 void BPTCDeInterleaveDMRData(uint8_t * Input, uint8_t * Output);
 uint32_t BPTC_196x96_Extract_Data(uint8_t InputDeInteleavedData[196], uint8_t DMRDataExtracted[96], uint8_t R[3]);
 uint32_t BPTC_128x77_Extract_Data(uint8_t InputDataMatrix[8][16], uint8_t DMRDataExtracted[77]);
-uint32_t BPTC_16x2_Extract_Data(uint8_t InputInterleavedData[32], uint8_t DMRDataExtracted[32]);
+uint32_t BPTC_16x2_Extract_Data(uint8_t InputInterleavedData[32], uint8_t DMRDataExtracted[32], uint32_t ParityCheckTypeOdd);
 
 
 /* SYNC DMR data extraction functions */
+void ProcessDmrPiHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
 void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
 void ProcessDmrTerminaisonLC(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
 void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state);
@@ -1012,6 +1013,7 @@ void DmrRestoreLinkControlData(dsd_opts * opts, dsd_state * state);
 /* DMR data (rate 1/2 , rate 3/4 , rate 1) management */
 void DmrDataContentInitLib(void);
 void DmrDataHeaderDecode(uint8_t InputDataBit[96], DMRDataPDU_t * DMRDataStruct);
+void DmrClearPreviouslyReceivedData(DMRDataPDU_t * DMRDataStruct);
 char * DmrDataServiceAccessPointIdentifierToStr(int ServiceAccessPointIdentifier);
 void DmrBackupReceivedData(dsd_opts * opts, dsd_state * state);
 void DmrRestoreReceivedData(dsd_opts * opts, dsd_state * state);

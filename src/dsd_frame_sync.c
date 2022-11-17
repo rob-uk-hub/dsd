@@ -97,7 +97,7 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
   char spectrum[64];
   char NXDN_LICH_Parity_Is_Correct = 0;
 
-  for (i = 18; i < LBUF_SIZE; i++)
+  for (i = 0; i < LBUF_SIZE; i++)
   {
     lbuf1[i] = 0;
     lbuf2[i] = 0;

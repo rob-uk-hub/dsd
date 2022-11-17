@@ -351,6 +351,8 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     /* Burst = PI header */
     case 0b0000:
     {
+      /* Extract data from the PI Header */
+      ProcessDmrPiHeader(opts, state, (uint8_t *)info, (uint8_t *)syncdata, (uint8_t *)SlotType);
       break;
     }
 

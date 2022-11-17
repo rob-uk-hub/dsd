@@ -399,13 +399,20 @@ void DmrDataHeaderDecode(uint8_t InputDataBit[96], DMRDataPDU_t * DMRDataStruct)
       /* Store the Manufacturer Set ID (MFID) or FID (Feature Set ID) */
       DMRDataStruct->MFID = (int)ConvertBitIntoBytes(&InputDataBit[8], 8);
 
+      /* Experimentally determined : A proprietary data header count as a data block
+       * so decrement the number of block to follow */
+      if(DMRDataStruct->BlocksToFollow)
+      {
+        DMRDataStruct->BlocksToFollow--;
+      }
+
       /* Convert all bit received to bytes */
       for(i = 0; i < 12; i++) DataHeaderBytes[i] = (char)ConvertBitIntoBytes(&InputDataBit[i * 8], 8);
 
       /* Store the proprietary data (8 bytes) */
       for(i = 0; i < 8; i++) DMRDataStruct->ProprietaryData[i] = DataHeaderBytes[i + 2];
 
-      fprintf(stderr, "| Proprietary Data Header  [SAP=%u  MFID=0x%02X  Data=%02X",
+      fprintf(stderr, "| Proprietary Data Header  [SAP=%u  MFID=0x%02X  Data=0x%02X",
               DMRDataStruct->SAPIdentifier, DMRDataStruct->MFID, DataHeaderBytes[2]);
 
       for(i = 3; i < 10; i++)
@@ -414,7 +421,7 @@ void DmrDataHeaderDecode(uint8_t InputDataBit[96], DMRDataPDU_t * DMRDataStruct)
       }
       fprintf(stderr, "  ");
 
-      fprintf(stderr, "CRC=0x%02X%02X] ", DataHeaderBytes[10], DataHeaderBytes[11]);
+      fprintf(stderr, "CRC=0x%02X%02X] ", DataHeaderBytes[10] & 0xFF, DataHeaderBytes[11] & 0xFF);
       break;
     }
 
@@ -430,7 +437,7 @@ void DmrDataHeaderDecode(uint8_t InputDataBit[96], DMRDataPDU_t * DMRDataStruct)
       }
       fprintf(stderr, "  ");
 
-      fprintf(stderr, "CRC=0x%02X%02X ", DataHeaderBytes[10], DataHeaderBytes[11]);
+      fprintf(stderr, "CRC=0x%02X%02X ", DataHeaderBytes[10] & 0xFF, DataHeaderBytes[11] & 0xFF);
       break;
     }
   } /* End switch(DMRDataStruct->SAPIdentifier & 0b1111) */
@@ -461,6 +468,30 @@ char * DmrDataServiceAccessPointIdentifierToStr(int ServiceAccessPointIdentifier
     default:     {return "Unknown"; break;}
   } /* End switch(SAPIdentifier) */
 } /* End DmrDataServiceAccessPointIdentifierToStr() */
+
+
+/*
+ * @brief : This function clear all data packet received before
+ *
+ * @param DMRDataStruct : A structure pointer where are stored all parameters of the DMR data PDU
+ *
+ * @return None
+ *
+ */
+void DmrClearPreviouslyReceivedData(DMRDataPDU_t * DMRDataStruct)
+{
+  DMRDataStruct->Rate12NbOfReceivedBlock = 0;
+  memset(DMRDataStruct->Rate12DataBit, 0, sizeof(char) * 12192);
+  memset(DMRDataStruct->Rate12DataWordBigEndian, 0, sizeof(short) * 762);
+  memset(DMRDataStruct->Rate12DataBitBigEndianUnconfirmed, 0, sizeof(char) * 12192);
+  memset(DMRDataStruct->Rate12DataBitBigEndianConfirmed, 0, sizeof(char) * 10160);
+
+  DMRDataStruct->Rate34NbOfReceivedBlock = 0;
+  memset(DMRDataStruct->Rate34DataBit, 0, sizeof(char) * 18288);
+  memset(DMRDataStruct->Rate34DataWordBigEndian, 0, sizeof(short) * 1143);
+  memset(DMRDataStruct->Rate34DataBitBigEndianUnconfirmed, 0, sizeof(char) * 18288);
+  memset(DMRDataStruct->Rate34DataBitBigEndianConfirmed, 0, sizeof(char) * 16256);
+} /* End DmrClearPreviouslyReceivedData() */
 
 
 /*

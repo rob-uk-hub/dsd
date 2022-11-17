@@ -61,6 +61,8 @@ void DmrLinkControlInitLib(void)
 /*
  * @brief : This function decodes the full link control data (56 bits)
  *          See ETSI TS 102 361-1 §9.1.6 Full Link Control (FULL LC) PDU.
+ *          See ETSI TS 102 361-2 §B.2 CSBK Opcode List.
+ *          See ETSI TS 102 361-4 §B.1 CSBK/MBC/UDT Opcode List.
  *
  * @param InputLCDataBit : A buffer pointer of the full LC data (96 bytes equivalent of 96 bits)
  *                         72 LC bits + 5 CRC bits (embedded signalling)
@@ -98,6 +100,7 @@ void DmrFullLinkControlDecode(uint8_t InputLCDataBit[96], FullLinkControlPDU_t *
     case 0b000000:  /* Grp_V_Ch_Usr PDU content - See ETSI TS 102 361-2 §7.1.1.1 Group Voice Channel User LC PDU */
     case 0b000011:  /* PUU_V_Ch_Usr content - See ETSI TS 102 361-2 §7.1.1.2 Unit to Unit Voice Channel User LC PDU */
     case 0b010000:  /* Determined experimentally */
+    case 0b110000:  /* Terminator Data Link Control (TD_LC) - See ETSI TS 102 361-3 §7.1.1.1 Terminator Data Link Control PDU */
     {
       /* Store the Protect Flag (PF) bit */
       FullLCOutputStruct->ProtectFlag = (unsigned int)(InputLCDataBit[0] & 1);
@@ -467,12 +470,24 @@ void DmrFullLinkControlDecode(uint8_t InputLCDataBit[96], FullLinkControlPDU_t *
         /* Store the Feature set ID (FID)  */
         FullLCOutputStruct->FeatureSetID = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[8], 8);
 
-        fprintf(stderr, "| Unknown FLCO  [PF=%u  R=%u  FLCO=0x%02X  FID=0x%02X  DATA=%02X-%02X-%02X-%02X-%02X-%02X-%02X  CRC=0x%02X%02X%02X] | ",
-                FullLCOutputStruct->ProtectFlag, FullLCOutputStruct->Reserved, FullLCOutputStruct->FullLinkControlOpcode & 0b111111,
-                FullLCOutputStruct->FeatureSetID,
-                LCDataBytes[2] & 0xFF, LCDataBytes[3]  & 0xFF, LCDataBytes[4] & 0xFF, LCDataBytes[5] & 0xFF,
-                LCDataBytes[6] & 0xFF, LCDataBytes[7]  & 0xFF, LCDataBytes[8] & 0xFF,
-                LCDataBytes[9] & 0xFF, LCDataBytes[10] & 0xFF, LCDataBytes[11] & 0xFF);
+        if(VoiceCallInProgress)
+        {
+          fprintf(stderr, "| Unknown FLCO  [PF=%u  R=%u  FLCO=0x%02X  FID=0x%02X  DATA=%02X-%02X-%02X-%02X-%02X-%02X-%02X  CRC=0x%02X] | ",
+                  FullLCOutputStruct->ProtectFlag, FullLCOutputStruct->Reserved, FullLCOutputStruct->FullLinkControlOpcode & 0b111111,
+                  FullLCOutputStruct->FeatureSetID,
+                  LCDataBytes[2] & 0xFF, LCDataBytes[3]  & 0xFF, LCDataBytes[4] & 0xFF, LCDataBytes[5] & 0xFF,
+                  LCDataBytes[6] & 0xFF, LCDataBytes[7]  & 0xFF, LCDataBytes[8] & 0xFF,
+                  (LCDataBytes[9] >> 3) & 0x1F);
+        }
+        else
+        {
+          fprintf(stderr, "| Unknown FLCO  [PF=%u  R=%u  FLCO=0x%02X  FID=0x%02X  DATA=%02X-%02X-%02X-%02X-%02X-%02X-%02X  CRC=0x%02X%02X%02X] | ",
+                  FullLCOutputStruct->ProtectFlag, FullLCOutputStruct->Reserved, FullLCOutputStruct->FullLinkControlOpcode & 0b111111,
+                  FullLCOutputStruct->FeatureSetID,
+                  LCDataBytes[2] & 0xFF, LCDataBytes[3]  & 0xFF, LCDataBytes[4] & 0xFF, LCDataBytes[5] & 0xFF,
+                  LCDataBytes[6] & 0xFF, LCDataBytes[7]  & 0xFF, LCDataBytes[8] & 0xFF,
+                  LCDataBytes[9] & 0xFF, LCDataBytes[10] & 0xFF, LCDataBytes[11] & 0xFF);
+        }
 
         //fprintf(stderr, "Data=0x%02X", LCDataBytes[0] & 0xFF);
         //for(i = 1; i < 11; i++)
