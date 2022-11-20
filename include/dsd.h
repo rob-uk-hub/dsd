@@ -243,6 +243,13 @@ typedef struct
   char  Rate34DataBitBigEndianUnconfirmed[18288];  /* May carry up to 127 blocks of 144 bits (total 2286 bytes) of unconfirmed rate 3/4 data (stored as 16 bit big endian format) */
   char  Rate34DataBitBigEndianConfirmed[16256];    /* May carry up to 127 blocks of 128 bits (total 2032 bytes) of confirmed rate 3/4 data (stored as 16 bit big endian format) */
 
+  /* Rate 1 data */
+  int   Rate1NbOfReceivedBlock;
+  char  Rate1DataBit[24384];                      /* May carry up to 127 blocks of 192 bits (total 3048 bytes) of rate 1 data */
+  short Rate1DataWordBigEndian[1524];             /* May carry up to 127 blocks of 192 bits (total 1524 word) of rate 1 data (stored into 16 bit big endian format) */
+  char  Rate1DataBitBigEndianUnconfirmed[24384];  /* May carry up to 127 blocks of 192 bits (total 3048 bytes) of unconfirmed rate 1 data (stored as 16 bit big endian format) */
+  char  Rate1DataBitBigEndianConfirmed[22352];    /* May carry up to 127 blocks of 192 bits (total 2794 bytes) of confirmed rate 1 data (stored as 16 bit big endian format) */
+
 } DMRDataPDU_t;
 
 
@@ -563,6 +570,8 @@ typedef struct
 
   TimeSlotVoiceSuperFrame_t TS1SuperFrame;
   TimeSlotVoiceSuperFrame_t TS2SuperFrame;
+
+  unsigned int CapacityPlusFlag;
 
   dPMRVoiceFS2Frame_t dPMRVoiceFS2Frame;
 
@@ -983,8 +992,9 @@ void ProcessDmrTerminaisonLC(dsd_opts * opts, dsd_state * state, uint8_t info[19
 void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state);
 void ProcessDmrCSBK(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
 void ProcessDmrDataHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
-void ProcessDmr12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
-void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], uint8_t syncdata[48], uint8_t SlotType[20]);
+void ProcessDmrRate12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
+void ProcessDmrRate34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], uint8_t syncdata[48], uint8_t SlotType[20]);
+void ProcessDmrRate1Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20]);
 uint16_t ComputeCrcCCITT(uint8_t * DMRData);
 uint32_t ComputeAndCorrectFullLinkControlCrc(uint8_t * FullLinkControlDataBytes, uint32_t * CRCComputed, uint32_t CRCMask);
 uint8_t ComputeCrc5Bit(uint8_t * DMRData);
@@ -996,7 +1006,7 @@ uint8_t * DmrAlgPrivacyModeToStr(uint32_t PrivacyMode);
 
 /* DMR Link control (LC) management functions */
 void DmrLinkControlInitLib(void);
-void DmrFullLinkControlDecode(uint8_t InputLCDataBit[96], FullLinkControlPDU_t * FullLCOutputStruct, int VoiceCallInProgress, int CSBKContent);
+void DmrFullLinkControlDecode(dsd_opts * opts, dsd_state * state, uint8_t InputLCDataBit[96], int VoiceCallInProgress, int CSBKContent);
 void PrintDmrGpsPositionFromLinkControlData(unsigned int GPSLongitude,
                                            unsigned int GPSLatitude,
                                            unsigned int GPSPositionError);

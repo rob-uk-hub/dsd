@@ -73,15 +73,26 @@ void DmrLinkControlInitLib(void)
  *
  * @return None
  */
-void DmrFullLinkControlDecode(uint8_t InputLCDataBit[96], FullLinkControlPDU_t * FullLCOutputStruct, int VoiceCallInProgress, int CSBKContent)
+void DmrFullLinkControlDecode(dsd_opts * opts, dsd_state * state, uint8_t InputLCDataBit[96], int VoiceCallInProgress, int CSBKContent)
 {
   uint32_t i;
   unsigned char * DataPointer = NULL;
   char LCDataBytes[12];
   unsigned int Offset = 0;
   unsigned int BitToCheck = 0;
+  FullLinkControlPDU_t * FullLCOutputStruct;
 
-  if((InputLCDataBit == NULL) || (FullLCOutputStruct == NULL)) return;
+  if((InputLCDataBit == NULL) || (opts == NULL) || (state == NULL)) return;
+
+  /* Check the current time slot */
+  if(state->currentslot == 0)
+  {
+    FullLCOutputStruct = &state->TS1SuperFrame.FullLC;
+  }
+  else
+  {
+    FullLCOutputStruct = &state->TS2SuperFrame.FullLC;
+  }
 
   /* Store the 96 bits [72 LC bits + 5 bits CRC = 77 bits] or [80 LC bits + 16 bits CRC = 96 bits] of the Link control data */
   for(i = 0; i < 96; i++)
@@ -345,6 +356,9 @@ void DmrFullLinkControlDecode(uint8_t InputLCDataBit[96], FullLinkControlPDU_t *
       /* Store the Group address CSBK n°6 (Talk Group used in others channels) */
       FullLCOutputStruct->GroupAddressCSBK[5] = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[72], 8);
 
+      /* Set the Cap+ flag */
+      state->CapacityPlusFlag = 1;
+
       /* Display the number of available channels */
       fprintf(stderr, "| Cap+ RestCh=%02u  ", FullLCOutputStruct->RestChannel);
 
@@ -398,6 +412,9 @@ void DmrFullLinkControlDecode(uint8_t InputLCDataBit[96], FullLinkControlPDU_t *
 
       /* Store the number of available channel (RestChannel) */
       FullLCOutputStruct->RestChannel = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[20], 4);
+
+      /* Set the Cap+ flag */
+      state->CapacityPlusFlag = 1;
 
       /* Display the number of available channels */
       fprintf(stderr, "| Cap+ RestCh=%02u  ", FullLCOutputStruct->RestChannel);

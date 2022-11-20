@@ -24,6 +24,7 @@
 //#define PRINT_DATA_HEADER_BYTES
 //#define PRINT_RATE_12_DATA_BYTES
 //#define PRINT_RATE_34_DATA_BYTES
+//#define PRINT_RATE_1_DATA_BYTES
 
 
 
@@ -35,6 +36,9 @@ void ProcessDmrPiHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], u
   uint16_t CRCComputed      = 0;
   uint32_t CRCCorrect       = 0;
   uint32_t IrrecoverableErrors = 0;
+  uint32_t KeyID            = 0;
+  uint8_t  AlgID            = 0;
+  uint8_t  FID              = 0;
   uint8_t  DeInteleavedData[196];
   uint8_t  DmrDataBit[96];
   uint8_t  DmrDataByte[12];
@@ -98,8 +102,21 @@ void ProcessDmrPiHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], u
     }
   }
 
+  /* Fill the key ID (up to 255 ID) */
+  KeyID = (uint32_t)(DmrDataByte[2] & 0xFF);
+
+  /* Fill the algorithm ID (0x21 = ARC4 ; 0x25 = AES256) */
+  AlgID = DmrDataByte[0] & 0xFF;
+
+  /* Fill the feature Set ID */
+  FID = DmrDataByte[1] & 0xFF;
+
   /* Display the PI header content */
-  fprintf(stderr, "| [Data=%02X", DmrDataByte[0] & 0xFF);
+  fprintf(stderr, "| AlgorithmID=0x%02X (%s) ", AlgID, DmrAlgIdToStr(AlgID));
+  fprintf(stderr, "KeyID=%u ", KeyID);
+  fprintf(stderr, "FID=0x%02X ", FID);
+
+  fprintf(stderr, "[Data=%02X", DmrDataByte[0] & 0xFF);
   for(i = 1; i < 10; i++) fprintf(stderr, "-%02X", DmrDataByte[i] & 0xFF);
   fprintf(stderr, " CRC=0x%04X] ", CRCExtracted);
 
@@ -125,6 +142,12 @@ void ProcessDmrPiHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], u
   fprintf(stderr, "\n");
 
   fprintf(stderr, "BPTC(196,96) Reserved bit R(0)-R(2) = 0x%02X\n", BPTCReservedBits);
+
+  /* Print the algorithm ID */
+  fprintf(stderr, "Algorithm ID = 0x%02X ", AlgID);
+
+  /* Print the key ID */
+  fprintf(stderr, "Key ID = 0x%02X ", KeyID);
 
   /* Print the Key ID validity */
   if((IrrecoverableErrors == 0) && CRCCorrect) fprintf(stderr, "(valid) - ");
@@ -242,6 +265,9 @@ void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[19
     DmrDataBit[j + 7] = (DmrDataByte[i] >> 0) & 0x01;
   }
 
+  /* Decode the content of the Link Control message */
+  //DmrFullLinkControlDecode(opts, state, DmrDataBit, 0, 0);
+
   /* Store the Protect Flag (PF) bit */
   TSVoiceSupFrame->FullLC.ProtectFlag = (unsigned int)(DmrDataBit[0]);
 
@@ -262,6 +288,13 @@ void ProcessDmrVoiceLcHeader(dsd_opts * opts, dsd_state * state, uint8_t info[19
 
   /* Store the Source address */
   TSVoiceSupFrame->FullLC.SourceAddress = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[48], 24);
+
+  /* On MotoTRBO Capacity+ mode, the Talkgroup ID and Source ID computation are different */
+  if(state->CapacityPlusFlag)
+  {
+    TSVoiceSupFrame->FullLC.GroupAddress &= 0xFF;
+    TSVoiceSupFrame->FullLC.SourceAddress &= 0xFFFF;
+  }
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
@@ -433,28 +466,31 @@ void ProcessDmrTerminaisonLC(dsd_opts * opts, dsd_state * state, uint8_t info[19
   }
 
   /* Decode the content of the Link Control message */
-  DmrFullLinkControlDecode(DmrDataBit, &TSVoiceSupFrame->FullLC, 0, 0);
+  //DmrFullLinkControlDecode(opts, state, DmrDataBit, 0, 0);
 
-//  /* Store the Protect Flag (PF) bit */
-//  TSVoiceSupFrame->FullLC.ProtectFlag = (unsigned int)(DmrDataBit[0]);
-//
-//  /* Store the Reserved bit */
-//  TSVoiceSupFrame->FullLC.Reserved = (unsigned int)(DmrDataBit[1]);
-//
-//  /* Store the Full Link Control Opcode (FLCO)  */
-//  TSVoiceSupFrame->FullLC.FullLinkControlOpcode = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[2], 6);
-//
-//  /* Store the Feature set ID (FID)  */
-//  TSVoiceSupFrame->FullLC.FeatureSetID = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[8], 8);
-//
-//  /* Store the Service Options  */
-//  TSVoiceSupFrame->FullLC.ServiceOptions = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[16], 8);
-//
-//  /* Store the Group address (Talk Group) */
-//  TSVoiceSupFrame->FullLC.GroupAddress = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[24], 24);
-//
-//  /* Store the Source address */
-//  TSVoiceSupFrame->FullLC.SourceAddress = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[48], 24);
+  /* Store the Protect Flag (PF) bit */
+  TSVoiceSupFrame->FullLC.ProtectFlag = (unsigned int)(DmrDataBit[0]);
+
+  /* Store the Reserved bit */
+  TSVoiceSupFrame->FullLC.Reserved = (unsigned int)(DmrDataBit[1]);
+
+  /* Store the Full Link Control Opcode (FLCO)  */
+  TSVoiceSupFrame->FullLC.FullLinkControlOpcode = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[2], 6);
+
+  /* Store the Feature set ID (FID)  */
+  TSVoiceSupFrame->FullLC.FeatureSetID = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[8], 8);
+
+  /* Store the Service Options  */
+  TSVoiceSupFrame->FullLC.ServiceOptions = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[16], 8);
+
+  /* Store the Group address (Talk Group) */
+  TSVoiceSupFrame->FullLC.GroupAddress = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[24], 24);
+
+  /* Store the Source address */
+  TSVoiceSupFrame->FullLC.SourceAddress = (unsigned int)ConvertBitIntoBytes(&DmrDataBit[48], 24);
+
+  /* Reset the Capacity+ flag */
+  state->CapacityPlusFlag = 0;
 
   if((IrrecoverableErrors == 0))// && CRCCorrect)
   {
@@ -468,7 +504,7 @@ void ProcessDmrTerminaisonLC(dsd_opts * opts, dsd_state * state, uint8_t info[19
   }
 
   /* Print the destination ID (TG) and the source ID */
-  //fprintf(stderr, "| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
+  fprintf(stderr, "| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
   fprintf(stderr, "FID=0x%02X ", TSVoiceSupFrame->FullLC.FeatureSetID);
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
@@ -609,10 +645,8 @@ void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state)
     ReverseChannelWord |= (uint32_t )ReverseChannel[i] & 1;
   }
 
-  //fprintf(stderr, "RC = 0x%03X - RC Errors = %u ", ReverseChannelWord, NonReverseChannelSingleBurstIrrecoverableErrors);
-
   /* Decode the content of the Link Control message */
-  DmrFullLinkControlDecode(LC_DataBit, &TSVoiceSupFrame->FullLC, 1, 0);
+  DmrFullLinkControlDecode(opts, state, LC_DataBit, 1, 0);
 
 //  /* Store the Protect Flag (PF) bit */
 //  TSVoiceSupFrame->FullLC.ProtectFlag = (unsigned int)(LC_DataBit[0]);
@@ -652,7 +686,14 @@ void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state)
 
   /* Print the destination ID (TG) and the source ID */
   //fprintf(stderr, "| TG=%u  Src=%u ", TSVoiceSupFrame->FullLC.GroupAddress, TSVoiceSupFrame->FullLC.SourceAddress);
+
+  /* Print the feature set ID */
   fprintf(stderr, "FID=0x%02X ", TSVoiceSupFrame->FullLC.FeatureSetID);
+
+  //fprintf(stderr, "| RC=0x%03X - RC Errors=%u ", ReverseChannelWord, NonReverseChannelSingleBurstIrrecoverableErrors);
+  fprintf(stderr, "| RC=0x%03X ", ReverseChannelWord);
+  if(NonReverseChannelSingleBurstIrrecoverableErrors == 0) fprintf(stderr, "(RC_OK)  | ");
+  else fprintf(stderr, "(RC_ERR) | ");
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
@@ -675,7 +716,7 @@ void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state)
 
   fprintf(stderr, "\n");
 
-  fprintf(stderr, "CRC extracted = 0x%04X - CRC computed = 0x%04X - ", CRCExtracted, CRCComputed);
+  fprintf(stderr, "CRC extracted = 0x%02X - CRC computed = 0x%02X - ", CRCExtracted, CRCComputed);
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
@@ -718,6 +759,7 @@ void ProcessDmrCSBK(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8
   UNUSED_VARIABLE(SlotType[0]);
   UNUSED_VARIABLE(BPTCReservedBits);
   UNUSED_VARIABLE(FID);
+  UNUSED_VARIABLE(TSVoiceSupFrame);
 
   CRCExtracted = 0;
   CRCComputed = 0;
@@ -785,7 +827,7 @@ void ProcessDmrCSBK(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8
   FID = DmrDataByte[1] & 0xFF;
 
   /* Decode the content of the Link Control message */
-  DmrFullLinkControlDecode(DmrDataBit, &TSVoiceSupFrame->FullLC, 0, 1);
+  DmrFullLinkControlDecode(opts, state, DmrDataBit, 0, 1);
 
   fprintf(stderr, "FID=0x%02X ", FID);
   if((IrrecoverableErrors == 0) && CRCCorrect)
@@ -917,15 +959,19 @@ void ProcessDmrDataHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196],
 } /* End ProcessDmrDataHeader() */
 
 
-void ProcessDmr12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20])
+void ProcessDmrRate12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20])
 {
   uint32_t i, j, k;
-  uint32_t CRCExtracted     = 0;
-  uint32_t CRCComputed      = 0;
-  uint32_t CRCCorrect       = 0;
+  uint32_t CRCExtracted      = 0;
+  uint32_t CRCComputed       = 0;
+  uint32_t CRCCorrect        = 0;
+  uint32_t CRC9BitsExtracted = 0;
+  uint32_t CRC9BitsComputed  = 0;
+  uint32_t CRC9BitsCorrect   = 0;
   uint32_t IrrecoverableErrors = 0;
   uint8_t  DeInteleavedData[196];
   uint8_t  DmrDataBit[96];
+  uint8_t  DmrDataBitConfirmed[87];
   uint8_t  DmrDataBitBigEndian[96];
   uint8_t  DmrDataByte[12];
   uint16_t DmrDataWordBigEndian[6];
@@ -958,6 +1004,35 @@ void ProcessDmr12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uin
 
   /* Fill the reserved bit (R(0)-R(2) of the BPTC(196,96) block) */
   BPTCReservedBits = (R[0] & 0x01) | ((R[1] << 1) & 0x02) | ((R[2] << 2) & 0x08);
+
+  /* Extract the 9 bits CRC (only applicable on confirmed rate 1/2 data) */
+  CRC9BitsExtracted = 0;
+  for(i = 0; i < 9; i++)
+  {
+    CRC9BitsExtracted <<= 1;
+    CRC9BitsExtracted = CRC9BitsExtracted | (DmrDataBit[i + 7] & 1);
+  }
+
+  /* Apply the CRC mask (see DMR standard B.3.12 Data Type CRC Mask) */
+  CRC9BitsExtracted = CRC9BitsExtracted ^ 0x0F0;
+
+  /* Fill the buffer to compute the CRC 9 bits (only applicable on confirmed rate 1/2 data) */
+  for(i = 0; i < 80; i++) DmrDataBitConfirmed[i] = DmrDataBit[i + 16];
+  for(i = 0; i < 7; i++) DmrDataBitConfirmed[i + 80] = DmrDataBit[i];
+
+  /* Compute the CRC 9 bits based on the received data (only applicable on confirmed rate 1/2 data) */
+  CRC9BitsComputed = (uint32_t)ComputeCrc9Bit(DmrDataBitConfirmed, 87);
+
+  if(CRC9BitsExtracted == CRC9BitsComputed)
+  {
+    CRC9BitsCorrect = 1;
+  }
+  else
+  {
+    CRC9BitsCorrect = 0;
+  }
+
+  //fprintf(stderr, "| CRC9 extracted = 0x%03X - CRC9 computed = 0x%03X %s ", CRC9BitsExtracted, CRC9BitsComputed, CRC9BitsCorrect ? "(OK) ":"(ERR)");
 
   /* Convert 96 bits to 12 bytes */
   k = 0;
@@ -1027,6 +1102,9 @@ void ProcessDmr12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uin
       /* Confirmed data */
       /* Compute the CRC */
       CRCComputed = ComputeCrc32Bit((uint8_t *)TSVoiceSupFrame->Data.Rate12DataBitBigEndianConfirmed, (TSVoiceSupFrame->Data.Rate12NbOfReceivedBlock * 80) - 32);
+
+      if(CRC9BitsCorrect) fprintf(stderr, "(CRC9_OK)  ");
+      else fprintf(stderr, "(CRC9_ERR) ");
     }
     else if((TSVoiceSupFrame->Data.DataPacketFormat & 0b1111) == 0b0010)
     {
@@ -1055,19 +1133,34 @@ void ProcessDmr12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uin
 
     if((IrrecoverableErrors == 0) && CRCCorrect)
     {
-      fprintf(stderr, "(OK)");
+      fprintf(stderr, "(OK) ");
     }
     else if(IrrecoverableErrors == 0)
     {
-      fprintf(stderr, "RAS (FEC OK/CRC ERR)");
+      fprintf(stderr, "RAS (FEC OK/CRC ERR) ");
     }
-    else fprintf(stderr, "(FEC FAIL/CRC ERR)");
+    else
+    {
+      fprintf(stderr, "(FEC FAIL/CRC ERR) ");
+    }
   }
   else
   {
-    if(IrrecoverableErrors == 0) fprintf(stderr, "(OK)");
-    else fprintf(stderr, "(FEC FAIL/CRC ERR)");
+    /* Display CRC-9 oonly if data are confirmed */
+    if((TSVoiceSupFrame->Data.DataPacketFormat & 0b1111) == 0b0011)
+    {
+      /* Confirmed data */
+      if(CRC9BitsCorrect) fprintf(stderr, "(CRC9_OK)  ");
+      else fprintf(stderr, "(CRC9_ERR) ");
+    }
+
+    if(IrrecoverableErrors == 0) fprintf(stderr, "(OK) ");
+    else fprintf(stderr, "(FEC FAIL/CRC ERR) ");
   }
+
+  fprintf(stderr, "[Frame %d/%d]",
+          TSVoiceSupFrame->Data.Rate12NbOfReceivedBlock,
+          TSVoiceSupFrame->Data.BlocksToFollow);
 
 #ifdef PRINT_RATE_12_DATA_BYTES
   fprintf(stderr, "\n");
@@ -1097,17 +1190,21 @@ void ProcessDmr12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uin
 
   fprintf(stderr, "Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
 #endif /* PRINT_RATE_12_DATA_BYTES */
-} /* End ProcessDmr12Data() */
+} /* End ProcessDmrRate12Data() */
 
 
-void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], uint8_t syncdata[48], uint8_t SlotType[20])
+void ProcessDmrRate34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], uint8_t syncdata[48], uint8_t SlotType[20])
 {
   uint32_t i, j;
-  uint32_t CRCExtracted     = 0;
-  uint32_t CRCComputed      = 0;
-  uint32_t CRCCorrect       = 0;
+  uint32_t CRCExtracted      = 0;
+  uint32_t CRCComputed       = 0;
+  uint32_t CRCCorrect        = 0;
+  uint32_t CRC9BitsExtracted = 0;
+  uint32_t CRC9BitsComputed  = 0;
+  uint32_t CRC9BitsCorrect   = 0;
   uint32_t IrrecoverableErrors = 0;
   uint8_t  DmrDataBit[144];
+  uint8_t  DmrDataBitConfirmed[135];
   uint8_t  DmrDataBitBigEndian[144];
   uint8_t  DmrDataByte[18];
   uint16_t DmrDataWordBigEndian[9];
@@ -1131,7 +1228,38 @@ void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], u
   }
 
   if(CDMRTrellis_decode(tdibits, DmrDataBit) == true) IrrecoverableErrors = 0;
+  else IrrecoverableErrors = 1;
 
+  /* Extract the 9 bits CRC (only applicable on confirmed rate 3/4 data) */
+  CRC9BitsExtracted = 0;
+  for(i = 0; i < 9; i++)
+  {
+    CRC9BitsExtracted <<= 1;
+    CRC9BitsExtracted = CRC9BitsExtracted | (uint32_t)(DmrDataBit[i + 7] & 1);
+  }
+
+  /* Apply the CRC mask (see DMR standard B.3.12 Data Type CRC Mask) */
+  CRC9BitsExtracted = CRC9BitsExtracted ^ 0x1FF;
+
+  /* Fill the buffer to compute the CRC 9 bits (only applicable on confirmed rate 3/4 data) */
+  for(i = 0; i < 128; i++) DmrDataBitConfirmed[i] = DmrDataBit[i + 16];
+  for(i = 0; i < 7; i++) DmrDataBitConfirmed[i + 128] = DmrDataBit[i];
+
+  /* Compute the CRC 9 bits based on the received data (only applicable on confirmed rate 3/4 data) */
+  CRC9BitsComputed = (uint32_t)ComputeCrc9Bit(DmrDataBitConfirmed, 135);
+
+  if(CRC9BitsExtracted == CRC9BitsComputed)
+  {
+    CRC9BitsCorrect = 1;
+  }
+  else
+  {
+    CRC9BitsCorrect = 0;
+  }
+
+  //fprintf(stderr, "| CRC9 extracted = 0x%03X - CRC9 computed = 0x%03X %s ", CRC9BitsExtracted, CRC9BitsComputed, CRC9BitsCorrect ? "(OK) ":"(ERR)");
+
+  /* Convert 144 bits into 18 bytes */
   for(i = 0, j = 0; i < 18; i++, j+=8)
   {
     DmrDataByte[i]  = (DmrDataBit[j + 0] & 1) << 7;
@@ -1169,7 +1297,7 @@ void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], u
     DmrDataBitBigEndian[(i * 16) + 15] = (DmrDataWordBigEndian[i] >>  0) & 0x01;
   }
 
-  /* Copy the frame content into the rate 1/2 buffers */
+  /* Copy the frame content into the rate 3/4 buffers */
   for(i = 0; i < 144; i++)
   {
     if(i >= 16) TSVoiceSupFrame->Data.Rate34DataBitBigEndianConfirmed[(TSVoiceSupFrame->Data.Rate34NbOfReceivedBlock * 128) + i - 16] = DmrDataBitBigEndian[i] & 0x01;
@@ -1199,6 +1327,9 @@ void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], u
       /* Confirmed data */
       /* Compute the CRC */
       CRCComputed = ComputeCrc32Bit((uint8_t *)TSVoiceSupFrame->Data.Rate34DataBitBigEndianConfirmed, (TSVoiceSupFrame->Data.Rate34NbOfReceivedBlock * 128) - 32);
+
+      if(CRC9BitsCorrect) fprintf(stderr, "(CRC9_OK)  ");
+      else fprintf(stderr, "(CRC9_ERR) ");
     }
     else if((TSVoiceSupFrame->Data.DataPacketFormat & 0b1111) == 0b0010)
     {
@@ -1227,19 +1358,34 @@ void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], u
 
     if((IrrecoverableErrors == 0) && CRCCorrect)
     {
-      fprintf(stderr, "(OK)");
+      fprintf(stderr, "(OK) ");
     }
     else if(IrrecoverableErrors == 0)
     {
-      fprintf(stderr, "RAS (FEC OK/CRC ERR)");
+      fprintf(stderr, "RAS (FEC OK/CRC ERR) ");
     }
-    else fprintf(stderr, "(FEC FAIL/CRC ERR)");
+    else
+    {
+      fprintf(stderr, "(FEC FAIL/CRC ERR) ");
+    }
   }
   else
   {
-    if(IrrecoverableErrors == 0) fprintf(stderr, "(OK)");
-    else fprintf(stderr, "(FEC FAIL/CRC ERR)");
+    /* Display CRC-9 oonly if data are confirmed */
+    if((TSVoiceSupFrame->Data.DataPacketFormat & 0b1111) == 0b0011)
+    {
+      /* Confirmed data */
+      if(CRC9BitsCorrect) fprintf(stderr, "(CRC9_OK)  ");
+      else fprintf(stderr, "(CRC9_ERR) ");
+    }
+
+    if(IrrecoverableErrors == 0) fprintf(stderr, "(OK) ");
+    else fprintf(stderr, "(FEC FAIL/CRC ERR) ");
   }
+
+  fprintf(stderr, "[Frame %d/%d]",
+          TSVoiceSupFrame->Data.Rate34NbOfReceivedBlock,
+          TSVoiceSupFrame->Data.BlocksToFollow);
 
 #ifdef PRINT_RATE_34_DATA_BYTES
   fprintf(stderr, "\n");
@@ -1269,7 +1415,231 @@ void ProcessDmr34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98], u
 
   fprintf(stderr, "Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
 #endif /* PRINT_RATE_34_DATA_BYTES */
-} /* End ProcessDmr34Data() */
+} /* End ProcessDmrRate34Data() */
+
+
+void ProcessDmrRate1Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], uint8_t syncdata[48], uint8_t SlotType[20])
+{
+  uint32_t i, j, k;
+  uint32_t CRCExtracted      = 0;
+  uint32_t CRCComputed       = 0;
+  uint32_t CRCCorrect        = 0;
+  uint32_t CRC9BitsExtracted = 0;
+  uint32_t CRC9BitsComputed  = 0;
+  uint32_t CRC9BitsCorrect   = 0;
+  uint8_t  DmrDataBit[192];
+  uint8_t  DmrDataBitConfirmed[183];
+  uint8_t  DmrDataBitBigEndian[192];
+  uint8_t  DmrDataByte[24];
+  uint16_t DmrDataWordBigEndian[12];
+  TimeSlotVoiceSuperFrame_t * TSVoiceSupFrame = NULL;
+
+  /* Remove warning compiler */
+  UNUSED_VARIABLE(opts);
+  UNUSED_VARIABLE(state);
+  UNUSED_VARIABLE(syncdata[0]);
+  UNUSED_VARIABLE(SlotType[0]);
+
+  /* Check the current time slot */
+  if(state->currentslot == 0)
+  {
+    TSVoiceSupFrame = &state->TS1SuperFrame;
+  }
+  else
+  {
+    TSVoiceSupFrame = &state->TS2SuperFrame;
+  }
+
+  /* Copy the payload (without the 4 padding bits) */
+  for(i = 0; i < 96; i++)
+  {
+    DmrDataBit[i] = info[i];
+    DmrDataBit[i + 96] = info[i + 100];
+  }
+
+  /* Extract the 9 bits CRC (only applicable on confirmed rate 1 data) */
+  CRC9BitsExtracted = 0;
+  for(i = 0; i < 9; i++)
+  {
+    CRC9BitsExtracted <<= 1;
+    CRC9BitsExtracted = CRC9BitsExtracted | (DmrDataBit[i + 7] & 1);
+  }
+
+  /* Apply the CRC mask (see DMR standard B.3.12 Data Type CRC Mask) */
+  CRC9BitsExtracted = CRC9BitsExtracted ^ 0x10F;
+
+  /* Fill the buffer to compute the CRC 9 bits (only applicable on confirmed rate 1 data) */
+  for(i = 0; i < 176; i++) DmrDataBitConfirmed[i] = DmrDataBit[i + 16];
+  for(i = 0; i < 7; i++) DmrDataBitConfirmed[i + 176] = DmrDataBit[i];
+
+  /* Compute the CRC 9 bits based on the received data (only applicable on confirmed rate 1 data) */
+  CRC9BitsComputed = (uint32_t)ComputeCrc9Bit(DmrDataBitConfirmed, 183);
+
+  if(CRC9BitsExtracted == CRC9BitsComputed)
+  {
+    CRC9BitsCorrect = 1;
+  }
+  else
+  {
+    CRC9BitsCorrect = 0;
+  }
+
+  //fprintf(stderr, "| CRC9 extracted = 0x%03X - CRC9 computed = 0x%03X %s ", CRC9BitsExtracted, CRC9BitsComputed, CRC9BitsCorrect ? "(OK) ":"(ERR)");
+
+  /* Convert 192 bits to 24 bytes */
+  k = 0;
+  for(i = 0; i < 24; i++)
+  {
+    DmrDataByte[i] = 0;
+    for(j = 0; j < 8; j++)
+    {
+      DmrDataByte[i] = DmrDataByte[i] << 1;
+      DmrDataByte[i] = DmrDataByte[i] | (DmrDataBit[k] & 0x01);
+      k++;
+    }
+  }
+
+  /* Convert bytes from little endian format to 16 bits word big endian format (used to compute the CRC-32) */
+  for(i = 0; i < 12; i++)
+  {
+    DmrDataWordBigEndian[i] = ((DmrDataByte[(2 * i) + 1] & 0xFF) << 8) | (DmrDataByte[2 * i] & 0xFF);
+    TSVoiceSupFrame->Data.Rate1DataWordBigEndian[(TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock * 12) + i] = DmrDataWordBigEndian[i] & 0xFFFF;
+
+    /* Decompose the 16 bit word big endian format into bit */
+    DmrDataBitBigEndian[(i * 16) + 0]  = (DmrDataWordBigEndian[i] >> 15) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 1]  = (DmrDataWordBigEndian[i] >> 14) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 2]  = (DmrDataWordBigEndian[i] >> 13) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 3]  = (DmrDataWordBigEndian[i] >> 12) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 4]  = (DmrDataWordBigEndian[i] >> 11) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 5]  = (DmrDataWordBigEndian[i] >> 10) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 6]  = (DmrDataWordBigEndian[i] >>  9) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 7]  = (DmrDataWordBigEndian[i] >>  8) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 8]  = (DmrDataWordBigEndian[i] >>  7) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 9]  = (DmrDataWordBigEndian[i] >>  6) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 10] = (DmrDataWordBigEndian[i] >>  5) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 11] = (DmrDataWordBigEndian[i] >>  4) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 12] = (DmrDataWordBigEndian[i] >>  3) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 13] = (DmrDataWordBigEndian[i] >>  2) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 14] = (DmrDataWordBigEndian[i] >>  1) & 0x01;
+    DmrDataBitBigEndian[(i * 16) + 15] = (DmrDataWordBigEndian[i] >>  0) & 0x01;
+  }
+
+  /* Copy the frame content into the rate 1 buffers */
+  for(i = 0; i < 192; i++)
+  {
+    if(i >= 16) TSVoiceSupFrame->Data.Rate1DataBitBigEndianConfirmed[(TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock * 176) + i - 16] = DmrDataBitBigEndian[i] & 0x01;
+    TSVoiceSupFrame->Data.Rate1DataBitBigEndianUnconfirmed[(TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock * 192) + i] = DmrDataBitBigEndian[i] & 0x01;
+    TSVoiceSupFrame->Data.Rate1DataBit[(TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock * 192) + i] = DmrDataBit[i] & 0x01;
+  }
+
+  /* Increment the number of data block received */
+  TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock++;
+
+  fprintf(stderr, "| Data=0x%02X", DmrDataByte[0] & 0xFF);
+  for(i = 1; i < 24; i++)
+  {
+    fprintf(stderr, "-0x%02X", DmrDataByte[i] & 0xFF);
+  }
+  fprintf(stderr, "  ");
+
+  /* Extract and compute CRC only at the end of the transmission */
+  if(TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock >= TSVoiceSupFrame->Data.BlocksToFollow)
+  {
+    /* Fill the CRC extracted (stored into little endian format) */
+    CRCExtracted = ((DmrDataByte[23] & 0xFF) << 24) | ((DmrDataByte[22] & 0xFF) << 16) | ((DmrDataByte[21] & 0xFF) << 8) | (DmrDataByte[20] & 0xFF);
+
+    /* CRC is different if data are confirmed or unconfirmed */
+    if((TSVoiceSupFrame->Data.DataPacketFormat & 0b1111) == 0b0011)
+    {
+      /* Confirmed data */
+      /* Compute the CRC */
+      CRCComputed = ComputeCrc32Bit((uint8_t *)TSVoiceSupFrame->Data.Rate1DataBitBigEndianConfirmed, (TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock * 176) - 32);
+
+      if(CRC9BitsCorrect) fprintf(stderr, "(CRC9_OK)  ");
+      else fprintf(stderr, "(CRC9_ERR) ");
+    }
+    else if((TSVoiceSupFrame->Data.DataPacketFormat & 0b1111) == 0b0010)
+    {
+      /* Unconfirmed data */
+      /* Compute the CRC */
+      CRCComputed = ComputeCrc32Bit((uint8_t *)TSVoiceSupFrame->Data.Rate1DataBitBigEndianUnconfirmed, (TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock * 192) - 32);
+    }
+    else
+    {
+      /* Default : Consider data as Unconfirmed data */
+      /* Compute the CRC */
+      CRCComputed = ComputeCrc32Bit((uint8_t *)TSVoiceSupFrame->Data.Rate1DataBitBigEndianUnconfirmed, (TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock * 192) - 32);
+    }
+
+    /* Check the CRCs */
+    if(CRCExtracted == CRCComputed)
+    {
+      /* CRCs are equal => Good ! */
+      CRCCorrect = 1;
+    }
+    else
+    {
+      /* CRCs different => Error */
+      CRCCorrect = 0;
+    }
+
+    if(CRCCorrect)
+    {
+      fprintf(stderr, "(OK) ");
+    }
+    else
+    {
+      fprintf(stderr, "(FEC FAIL/CRC ERR) ");
+    }
+  }
+  else
+  {
+    /* Display CRC-9 oonly if data are confirmed */
+    if((TSVoiceSupFrame->Data.DataPacketFormat & 0b1111) == 0b0011)
+    {
+      /* Confirmed data */
+      if(CRC9BitsCorrect) fprintf(stderr, "(CRC9_OK)  ");
+      else fprintf(stderr, "(CRC9_ERR) ");
+    }
+
+    fprintf(stderr, "(OK) ");
+  }
+
+  fprintf(stderr, "[Frame %d/%d]",
+          TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock,
+          TSVoiceSupFrame->Data.BlocksToFollow);
+
+#ifdef PRINT_RATE_1_DATA_BYTES
+  fprintf(stderr, "\n");
+  fprintf(stderr, "RATE 1 DATA : ");
+  for(i = 0; i < 18; i++)
+  {
+    fprintf(stderr, "0x%02X", DmrDataByte[i]);
+    if(i != 17) fprintf(stderr, " - ");
+  }
+
+  fprintf(stderr, "\n");
+
+  fprintf(stderr, "CRC extracted  = 0x%08X - CRC computed  = 0x%08X - ", CRCExtracted, CRCComputed);
+
+  if((IrrecoverableErrors == 0) && CRCCorrect)
+  {
+    fprintf(stderr, "CRCs are equal + FEC OK !\n");
+  }
+  else if(IrrecoverableErrors == 0)
+  {
+    fprintf(stderr, "FEC correctly corrected but CRCs are incorrect\n");
+  }
+  else
+  {
+    fprintf(stderr, "ERROR !!! CRCs are different and FEC Failed !\n");
+  }
+
+  fprintf(stderr, "Hamming Irrecoverable Errors = %u\n", IrrecoverableErrors);
+#endif /* PRINT_RATE_1_DATA_BYTES */
+} /* End ProcessDmrRate1Data() */
+
+
 
 
 /*
@@ -1486,6 +1856,9 @@ uint16_t ComputeCrc9Bit(uint8_t * DMRData, uint32_t NbData)
     }
   }
 
+  /* Conserve only the 9 LSBs */
+  CRC &= 0x01FF;
+
   /* Invert the CRC */
   CRC ^= 0x01FF;
 
@@ -1543,6 +1916,8 @@ uint32_t ComputeCrc32Bit(uint8_t * DMRData, uint32_t NbData)
  * @param AlgID : The algorithm ID
  *   @arg : 0x21 for ARC4
  *   @arg : 0x25 for AES256
+ *   @arg : 0x02 for HYTERA Full encrypt
+ *   @arg : 0x05 for AnyTone AES 256
  *
  * @return A constant string pointer that explain the Alg ID used
  */
@@ -1550,6 +1925,9 @@ uint8_t * DmrAlgIdToStr(uint8_t AlgID)
 {
   if(AlgID == 0x21) return (uint8_t *)"ARC4";
   else if(AlgID == 0x25) return (uint8_t *)"AES256";
+  else if(AlgID == 0x02) return (uint8_t *)"HYTERA FULL ENC";
+  else if(AlgID == 0x05) return (uint8_t *)"AES256 ANYTONE";
+  else if(AlgID == 0x0E) return (uint8_t *)"HYTERA UNKNOWN";
   else return (uint8_t *)"UNKNOWN";
 } /* End DmrAlgIdToStr */
 

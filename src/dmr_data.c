@@ -400,14 +400,14 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     /* Burst = RATE 1/2 DATA */
     case 0b0111:
     {
-      ProcessDmr12Data(opts, state, (uint8_t *)info, (uint8_t *)syncdata, (uint8_t *)SlotType);
+      ProcessDmrRate12Data(opts, state, (uint8_t *)info, (uint8_t *)syncdata, (uint8_t *)SlotType);
       break;
     }
 
     /* Burst = RATE 3/4 DATA */
     case 0b1000:
     {
-      ProcessDmr34Data(opts, state, (uint8_t *)trellisdibits, (uint8_t *)syncdata, (uint8_t *)SlotType);
+      ProcessDmrRate34Data(opts, state, (uint8_t *)trellisdibits, (uint8_t *)syncdata, (uint8_t *)SlotType);
       break;
     }
 
@@ -420,6 +420,7 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     /* Burst = Rate 1 DATA */
     case 0b1010:
     {
+      ProcessDmrRate1Data(opts, state, (uint8_t *)info, (uint8_t *)syncdata, (uint8_t *)SlotType);
       break;
     }
 

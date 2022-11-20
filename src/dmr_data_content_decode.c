@@ -491,6 +491,12 @@ void DmrClearPreviouslyReceivedData(DMRDataPDU_t * DMRDataStruct)
   memset(DMRDataStruct->Rate34DataWordBigEndian, 0, sizeof(short) * 1143);
   memset(DMRDataStruct->Rate34DataBitBigEndianUnconfirmed, 0, sizeof(char) * 18288);
   memset(DMRDataStruct->Rate34DataBitBigEndianConfirmed, 0, sizeof(char) * 16256);
+
+  DMRDataStruct->Rate1NbOfReceivedBlock = 0;
+  memset(DMRDataStruct->Rate1DataBit, 0, sizeof(char) * 24384);
+  memset(DMRDataStruct->Rate1DataWordBigEndian, 0, sizeof(short) * 1524);
+  memset(DMRDataStruct->Rate1DataBitBigEndianUnconfirmed, 0, sizeof(char) * 24384);
+  memset(DMRDataStruct->Rate1DataBitBigEndianConfirmed, 0, sizeof(char) * 22352);
 } /* End DmrClearPreviouslyReceivedData() */
 
 

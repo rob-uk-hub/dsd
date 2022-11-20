@@ -55,7 +55,7 @@ int getSymbol (dsd_opts * opts, dsd_state * state, int have_sync)
         {
           i++;          // fall back
         }
-        else if ((state->jitter > state->symbolCenter) && (state->jitter < SAMPLE_PER_SYMBOL_P25))
+        else if ((state->jitter > state->symbolCenter) && (state->jitter < state->symbolCenter))
         {
           i--;          // catch up
         }
