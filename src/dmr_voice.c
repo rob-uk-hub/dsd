@@ -334,7 +334,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
     state->LCSS = (unsigned int)((EmbeddedSignalling[5] << 1) + EmbeddedSignalling[6]);
     state->LCSS_ok = EmbeddedSignallingOk;
 
-    if((strcmp (sync, DMR_BS_DATA_SYNC) == 0) || (strcmp (sync, DMR_MS_DATA_SYNC) == 0))
+    if(strcmp (sync, DMR_BS_DATA_SYNC) == 0)
     {
       mutecurrentslot = 1;
       state->directmode = 0;
@@ -346,6 +346,13 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       {
         sprintf(state->slot2light, "[slot2]");
       }
+    }
+    else if(strcmp (sync, DMR_MS_DATA_SYNC) == 0)
+    {
+      mutecurrentslot = 1;
+      state->directmode = 1;  /* Direct mode */
+      state->currentslot = 0; /* In direct mode unknown slot, force current slot to 0 (slot 1) */
+      sprintf(state->slot1light, "[slot1]");
     }
     else if(strcmp (sync, DMR_DIRECT_MODE_TS1_DATA_SYNC) == 0)
     {
@@ -361,7 +368,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       state->directmode = 1; /* Direct mode */
       sprintf(state->slot1light, "[sLoT2]");
     }
-    else if((strcmp (sync, DMR_BS_VOICE_SYNC) == 0) || (strcmp (sync, DMR_MS_VOICE_SYNC) == 0))
+    else if(strcmp (sync, DMR_BS_VOICE_SYNC) == 0)
     {
       mutecurrentslot = 0;
       state->directmode = 0;
@@ -373,6 +380,13 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       {
         sprintf(state->slot2light, "[SLOT2]");
       }
+    }
+    else if(strcmp (sync, DMR_MS_VOICE_SYNC) == 0)
+    {
+      mutecurrentslot = 0;
+      state->directmode = 1;  /* Direct mode */
+      state->currentslot = 0; /* In direct mode unknown slot, force current slot to 0 (slot 1) */
+      sprintf(state->slot1light, "[SLOT1]");
     }
     else if(strcmp (sync, DMR_DIRECT_MODE_TS1_VOICE_SYNC) == 0)
     {
@@ -573,7 +587,8 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
     /* Check SYNC of 2nd slot */
     if((strcmp (sync, DMR_BS_DATA_SYNC) == 0) || (msMode == 1))
     {
-      state->directmode = 0;
+      if(msMode) state->directmode = 1;
+      else state->directmode = 0;
       if(state->currentslot == 0)
       {
         sprintf(state->slot2light, " slot2 ");

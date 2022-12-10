@@ -297,6 +297,8 @@ void initState (dsd_state * state)
   memset(&state->TS2SuperFrame, 0, sizeof(TimeSlotVoiceSuperFrame_t));
   memset(&state->dPMRVoiceFS2Frame, 0, sizeof(dPMRVoiceFS2Frame_t));
 
+  state->CapacityPlusFlag = 0;
+
   state->printDMRRawVoiceFrameHex    = 0;
   state->printDMRRawVoiceFrameBin    = 0;
   state->printDMRRawDataFrameHex     = 0;

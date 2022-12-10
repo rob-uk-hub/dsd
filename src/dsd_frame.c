@@ -109,6 +109,18 @@ void processFrame (dsd_opts * opts, dsd_state * state)
    * 27 = -dPMR Frame Sync 4
    * 28 = +NXDN (Frame Sync Word detected only)
    * 29 = -NXDN (Frame Sync Word detected only)
+   * 30 = +YSF
+   * 31 = -YSF
+   * 32 = +DMR MS Voice
+   * 33 = +DMR MS Data
+   * 34 = +DMR RC Data
+   * 35 = +P25 P2
+   * 36 = -P25 P2
+   * 37 = +EDACS
+   * 38 = -EDACS
+   * 39 = -DMR MS Voice (inverted)
+   * 40 = -DMR MS Data (inverted)
+   * 41 = -DMR RC Data (inverted)
    */
   if ((state->synctype == 8) || (state->synctype == 9))
   {
@@ -241,7 +253,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
     return;
   }
 
-  else if ((state->synctype >= 10) && (state->synctype <= 13))
+  else if (((state->synctype >= 10) && (state->synctype <= 13)) || ((state->synctype >= 32) && (state->synctype <= 34)) || ((state->synctype >= 39) && (state->synctype <= 41)))
   {
     state->nac = 0;
     state->lastsrc = 0;
@@ -254,7 +266,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
         fprintf(stderr, "inlvl: %2i%% ", level);
       }
     }
-    if ((state->synctype == 11) || (state->synctype == 12))
+    if ((state->synctype == 11) || (state->synctype == 12) || (state->synctype == 32) || (state->synctype == 39))
     {
       if ((opts->mbe_out_dir[0] != 0) && (opts->mbe_out_f == NULL))
       {

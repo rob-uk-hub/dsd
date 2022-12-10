@@ -100,6 +100,7 @@ void processX2TDMAvoice (dsd_opts * opts, dsd_state * state)
       if (i == 2)
       {
         state->currentslot = (1 & (dibit >> 1));  // bit 1
+
         if (state->currentslot == 0)
         {
           state->slot1light[0] = '[';

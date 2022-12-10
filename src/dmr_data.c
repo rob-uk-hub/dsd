@@ -205,7 +205,7 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
   fprintf(stderr, "%s ", syncbits);
 #endif
 
-  if((strcmp (sync, DMR_BS_DATA_SYNC) == 0) || (strcmp (sync, DMR_MS_DATA_SYNC) == 0))
+  if(strcmp (sync, DMR_BS_DATA_SYNC) == 0)
   {
     if (state->currentslot == 0)
     {
@@ -215,6 +215,11 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     {
       sprintf(state->slot2light, "[slot2]");
     }
+  }
+  else if(strcmp (sync, DMR_MS_DATA_SYNC) == 0)
+  {
+    state->currentslot = 0; /* In direct mode unknown slot, force current slot to 0 (slot 1) */
+    sprintf(state->slot1light, "[slot1]");
   }
   else if(strcmp (sync, DMR_DIRECT_MODE_TS1_DATA_SYNC) == 0)
   {
