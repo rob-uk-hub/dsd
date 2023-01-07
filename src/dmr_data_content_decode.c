@@ -412,12 +412,12 @@ void DmrDataHeaderDecode(uint8_t InputDataBit[96], DMRDataPDU_t * DMRDataStruct)
       /* Store the proprietary data (8 bytes) */
       for(i = 0; i < 8; i++) DMRDataStruct->ProprietaryData[i] = DataHeaderBytes[i + 2];
 
-      fprintf(stderr, "| Proprietary Data Header  [SAP=%u  MFID=0x%02X  Data=0x%02X",
-              DMRDataStruct->SAPIdentifier, DMRDataStruct->MFID, DataHeaderBytes[2]);
+      fprintf(stderr, "| Proprietary Data Header  [SAP=%u  MFID=0x%02X  Data=%02X",
+              DMRDataStruct->SAPIdentifier, DMRDataStruct->MFID, DataHeaderBytes[2] & 0xFF);
 
       for(i = 3; i < 10; i++)
       {
-        fprintf(stderr, "-0x%02X", DataHeaderBytes[i] & 0xFF);
+        fprintf(stderr, "-%02X", DataHeaderBytes[i] & 0xFF);
       }
       fprintf(stderr, "  ");
 
@@ -430,10 +430,10 @@ void DmrDataHeaderDecode(uint8_t InputDataBit[96], DMRDataPDU_t * DMRDataStruct)
       /* Convert all bit received to bytes */
       for(i = 0; i < 12; i++) DataHeaderBytes[i] = (char)ConvertBitIntoBytes(&InputDataBit[i * 8], 8);
 
-      fprintf(stderr, "| Data=0x%02X", DataHeaderBytes[0] & 0xFF);
+      fprintf(stderr, "| Data=%02X", DataHeaderBytes[0] & 0xFF);
       for(i = 1; i < 10; i++)
       {
-        fprintf(stderr, "-0x%02X", DataHeaderBytes[i] & 0xFF);
+        fprintf(stderr, "-%02X", DataHeaderBytes[i] & 0xFF);
       }
       fprintf(stderr, "  ");
 
