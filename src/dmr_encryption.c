@@ -37,6 +37,7 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
 
   /*
    * Currently encryption is not supported in this public version...
+   * You can implement it by following the example below.
    */
 
   /* Check the current time slot */
@@ -88,23 +89,57 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
    * A DMR superframe = 6 frames x 3 AMBE voice sample of 49 bits each
    * uint8_t KeyStream[6][3][49];
    *
-   * 1°) Initialize the "KeyStream" buffer (total 882 bits) with correct bits (depending of
-   *     encryption mode used, MotoTRBO BP, Hytera BP, MotoTRBO EP, MotoTRBO AES...
    *
-   * 2°) Apply a XOR between "KeyStream" and "TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i][j]"
-   *     like code :
-   *     for(Frame = 0; Frame < 6; Frame++)
-   *     {
-   *       for(i = 0; i < 3; i++)
-   *       {
-   *         for(j = 0; j < 49; j++)
-   *         {
-   *           TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i] ^= KeyStream[Frame][i][j];
-   *         }
-   *       }
-   *     }
+   * 1) Initialize the "KeyStream" buffer (total 882 bits) with correct bits (depending of
+   *    encryption mode used, MotoTRBO BP, Hytera BP, MotoTRBO EP, MotoTRBO AES...
    *
-   * 3°) Play all AMBE decoded sample (see the "for" loop below)
+   *     // DMR voice frame #1
+   *     KeyStream[0][0][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #01
+   *     KeyStream[0][1][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #02
+   *     KeyStream[0][2][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #03
+   *
+   *     // DMR voice frame #2
+   *     KeyStream[1][0][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #04
+   *     KeyStream[1][1][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #05
+   *     KeyStream[1][2][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #06
+   *
+   *     // DMR voice frame #3
+   *     KeyStream[2][0][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #07
+   *     KeyStream[2][1][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #08
+   *     KeyStream[2][2][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #09
+   *
+   *     // DMR voice frame #4
+   *     KeyStream[3][0][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #10
+   *     KeyStream[3][1][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #11
+   *     KeyStream[3][2][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #12
+   *
+   *     // DMR voice frame #5
+   *     KeyStream[4][0][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #13
+   *     KeyStream[4][1][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #14
+   *     KeyStream[4][2][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #15
+   *
+   *     // DMR voice frame #6
+   *     KeyStream[5][0][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #16
+   *     KeyStream[5][1][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #17
+   *     KeyStream[5][2][0..48] ==> Filled with a 49 bits keystream to decode the AMBE sample #18
+   *
+   *
+   * 2) Apply a XOR between "KeyStream" and "AmbeBitBuffer[Frame][i][j]" like this code :
+   *
+   *    UseAmbeByteBuffer = 0; // The deciphered result will be available in the "AmbeBitBuffer" buffer
+   *
+   *    for(Frame = 0; Frame < 6; Frame++)
+   *    {
+   *      for(i = 0; i < 3; i++)
+   *      {
+   *        for(j = 0; j < 49; j++)
+   *        {
+   *          AmbeBitBuffer[Frame][i][j] = AmbeBitBuffer[Frame][i][j] ^ KeyStream[Frame][i][j];
+   *        }
+   *      }
+   *    }
+   *
+   * 3) Play all AMBE decoded sample (see the "for" loop below)
    *
    * */
 
@@ -118,10 +153,10 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
      * 1 DMR voice superframe = 6 DMR voice frames */
     for(Frame = 0, k = 0; Frame < 6; Frame++)
     {
-      /* 3 AMBE samples in one DMR voice frame */
+      /* 1 DMR voice frame contains 3 AMBE samples */
       for(i = 0; i < 3; i++)
       {
-        /* 49 bits distributed into 7 bytes */
+        /* 1 AMBE sample contains 49 bits */
         for(j = 0; j < 49; j++)
         {
           /* XOR encrypted data with the key */
@@ -143,10 +178,10 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
      * 1 DMR voice superframe = 6 DMR voice frames */
     for(Frame = 0, k = 0; Frame < 6; Frame++)
     {
-      /* 3 AMBE samples in one DMR voice frame */
+      /* 1 DMR voice frame contains 3 AMBE samples */
       for(i = 0; i < 3; i++)
       {
-        /* 49 bits distributed into 7 bytes */
+        /* 1 AMBE sample contains 49 bits */
         for(j = 0; j < 49; j++)
         {
           /* XOR encrypted data with the key */

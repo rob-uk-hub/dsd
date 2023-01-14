@@ -648,6 +648,9 @@ typedef struct
 #define NXDN_SYNC3                "3313113331"  // TODO : Only for test
 #define INV_NXDN_SYNC3            "1131331113"  // TODO : Only for test
 
+#define NXDN_DOUBLE_SYNC                        "31313311313131331131"  // TODO : Only for test
+#define NXDN_PREAMBLE_POST_FIELD_AND_FSW_SYNC   "3131133313131331131"   // TODO : Only for test
+
 
 /* DMR Frame Sync Pattern - Base Station Sourced - Data
  * HEX    :    D    F    F    5    7    D    7    5    D    F    5    D

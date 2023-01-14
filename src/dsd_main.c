@@ -895,6 +895,10 @@ int main (int argc, char **argv)
           opts.frame_dmr = 1;
           opts.frame_provoice = 0;
           opts.frame_dpmr = 0;
+          opts.mod_c4fm = 0;
+          opts.mod_qpsk = 0;
+          opts.mod_gfsk = 1;
+          state.rf_mod = GFSK_MODE;
           fprintf(stderr, "Decoding only DMR/MOTOTRBO frames.\n");
         }
         else if (optarg[0] == 'm')

@@ -237,6 +237,8 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
       }
 
       qsort (lbuf2, t_max, sizeof (int), comp);
+
+      // min/max calculation
       lmin = (lbuf2[1] + lbuf2[2] + lbuf2[3]) / 3;
       lmax = (lbuf2[t_max - 3] + lbuf2[t_max - 2] + lbuf2[t_max - 1]) / 3;
 
