@@ -22,8 +22,14 @@
 
 void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
 {
-  uint32_t i, j;
+  uint32_t i, j, k;
   uint32_t Frame;
+
+  /* AMBE voice frame = 49 bit = 7 byte => 3 AMBE sample by voice frame
+   * => 6 voice frame by voice superframe */
+  uint8_t  AmbeByteBuffer[6][3][7];
+  uint8_t  AmbeBitBuffer[6][3][49]; /* 6 * 3 DMR frame * 49 bit AMBE sample = 882 bit */
+  uint8_t  UseAmbeByteBuffer = 1;  /* 1 = Use "AmbeByteBuffer" ; 0 = Use "AmbeBitBuffer" */
   TimeSlotVoiceSuperFrame_t * TSVoiceSupFrame = NULL;
   int *errs;
   int *errs2;
@@ -42,6 +48,40 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
   {
     TSVoiceSupFrame = &state->TS2SuperFrame;
   }
+
+  /* Check the current time slot */
+  if(state->currentslot == 0)
+  {
+    TSVoiceSupFrame = &state->TS1SuperFrame;
+
+    /* Check if we need to play the current slot */
+    if(opts->SlotToOnlyDecode == 2) PlayCurrentSlot = 0;
+    else PlayCurrentSlot = 1;
+  }
+  else
+  {
+    TSVoiceSupFrame = &state->TS2SuperFrame;
+
+    /* Check if we need to play the current slot */
+    if(opts->SlotToOnlyDecode == 1) PlayCurrentSlot = 0;
+    else PlayCurrentSlot = 1;
+  }
+
+  /* Convert all 49 bit AMBE sample into 7 bytes buffer */
+  for(Frame = 0; Frame < 6; Frame++)
+  {
+    Convert49BitSampleInto7Bytes(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[0],
+                                 (char *)AmbeByteBuffer[Frame][0]);
+    Convert49BitSampleInto7Bytes(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[1],
+                                 (char *)AmbeByteBuffer[Frame][1]);
+    Convert49BitSampleInto7Bytes(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[2],
+                                 (char *)AmbeByteBuffer[Frame][2]);
+
+    memcpy(AmbeBitBuffer[Frame][0], TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[0], 49);
+    memcpy(AmbeBitBuffer[Frame][1], TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[1], 49);
+    memcpy(AmbeBitBuffer[Frame][2], TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[2], 49);
+  }
+
 
   /* Apply encryption here
    *
@@ -68,23 +108,78 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
    *
    * */
 
-  /* Check the current time slot */
-  if(state->currentslot == 0)
-  {
-    TSVoiceSupFrame = &state->TS1SuperFrame;
 
-    /* Check if we need to play the current slot */
-    if(opts->SlotToOnlyDecode == 2) PlayCurrentSlot = 0;
-    else PlayCurrentSlot = 1;
-  }
-  else
+  if((opts->UseSpecificDmr49BitsAmbeKeyStreamUsed) && (state->display_raw_data == 0))
   {
-    TSVoiceSupFrame = &state->TS2SuperFrame;
+    /* The deciphered result will be available in the "AmbeBitBuffer" buffer */
+    UseAmbeByteBuffer = 0;
 
-    /* Check if we need to play the current slot */
-    if(opts->SlotToOnlyDecode == 1) PlayCurrentSlot = 0;
-    else PlayCurrentSlot = 1;
+    /* Decipher all 49 bits AMBE sample
+     * 1 DMR voice superframe = 6 DMR voice frames */
+    for(Frame = 0, k = 0; Frame < 6; Frame++)
+    {
+      /* 3 AMBE samples in one DMR voice frame */
+      for(i = 0; i < 3; i++)
+      {
+        /* 49 bits distributed into 7 bytes */
+        for(j = 0; j < 49; j++)
+        {
+          /* XOR encrypted data with the key */
+          AmbeBitBuffer[Frame][i][j] = (AmbeBitBuffer[Frame][i][j] ^ opts->UseSpecificDmr49BitsAmbeKeyStream[j]) & 1;
+        }
+      }
+    }
+  } /* End if((opts->UseSpecificDmr49BitsAmbeKeyStreamUsed) && (state->display_raw_data == 0)) */
+
+
+  if((opts->UseSpecificDmrAmbeSuperFrameKeyStreamUsed) && (state->display_raw_data == 0))
+  {
+    /* The deciphered result will be available in the "AmbeBitBuffer" buffer */
+    UseAmbeByteBuffer = 0;
+
+    k = 0;
+
+    /* Decipher all 49 bits AMBE sample
+     * 1 DMR voice superframe = 6 DMR voice frames */
+    for(Frame = 0, k = 0; Frame < 6; Frame++)
+    {
+      /* 3 AMBE samples in one DMR voice frame */
+      for(i = 0; i < 3; i++)
+      {
+        /* 49 bits distributed into 7 bytes */
+        for(j = 0; j < 49; j++)
+        {
+          /* XOR encrypted data with the key */
+          AmbeBitBuffer[Frame][i][j] = (AmbeBitBuffer[Frame][i][j] ^ opts->UseSpecificDmrAmbeSuperFrameKeyStream[k++]) & 1;
+        }
+      }
+    }
+  } /* End if((opts->UseSpecificDmr49BitsAmbeKeyStreamUsed) && (state->display_raw_data == 0)) */
+
+
+  /* Convert all 7 bytes buffer into 49 bit AMBE sample */
+  for(Frame = 0; Frame < 6; Frame++)
+  {
+    /* Check the buffer to use */
+    if(UseAmbeByteBuffer)
+    {
+      /* Use "AmbeByteBuffer" buffer */
+      Convert7BytesInto49BitSample((char *)AmbeByteBuffer[Frame][0],
+                                   TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[0]);
+      Convert7BytesInto49BitSample((char *)AmbeByteBuffer[Frame][1],
+                                   TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[1]);
+      Convert7BytesInto49BitSample((char *)AmbeByteBuffer[Frame][2],
+                                   TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[2]);
+    }
+    else
+    {
+      /* Use "AmbeBitBuffer" buffer */
+      memcpy(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[0], AmbeBitBuffer[Frame][0], 49);
+      memcpy(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[1], AmbeBitBuffer[Frame][1], 49);
+      memcpy(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[2], AmbeBitBuffer[Frame][2], 49);
+    }
   }
+
 
   /*
    * Play all AMBE voice samples

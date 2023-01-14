@@ -94,7 +94,6 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
    * 41 = -DMR RC Data (inverted)
    */
 
-
   int i, j, t, o, dibit, sync, symbol, synctest_pos, lastt;
   char synctest[25];
   char synctest12[13];
@@ -160,7 +159,8 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
 
     lbuf1[lidx] = symbol;
     state->sbuf[state->sidx] = symbol;
-    if (lidx == (LBUF_SIZE - 1))
+
+    if (lidx == (t_max - 1))
     {
       lidx = 0;
     }
@@ -177,8 +177,7 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
       state->sidx++;
     }
 
-    //if (lastt == 23)
-    if (lastt == (t_max - 1))
+    if (lastt == t_max) //issue for QPSK on shorter sync pattern? //23
     {
       lastt = 0;
       if (state->numflips > opts->mod_threshold)
@@ -188,8 +187,8 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
           state->rf_mod = QPSK_MODE;
         }
       }
-      //else if (state->numflips > 18)
-      else if (state->numflips > (t_max * 75 / 100))
+      else if (state->numflips > 18)
+      //else if (state->numflips > (t_max * 75 / 100)) // TODO : To be verified
       {
         if (opts->mod_gfsk == 1)
         {
@@ -236,22 +235,10 @@ int getFrameSync (dsd_opts * opts, dsd_state * state)
       {
         lbuf2[i] = lbuf1[i];
       }
-      qsort (lbuf2, (size_t)t_max, sizeof (int), comp);
-      //qsort (lbuf2, LBUF_SIZE, sizeof (int), comp);
 
-      // min/max calculation
-
-      lmin = 0;
-      lmax = 0;
-      for(i = 0; i < 4; i++)
-      //for(i = 0; i < 3; i++)
-      {
-        lmin += lbuf2[i + 1];
-        lmax += lbuf2[t_max - 1 - i];
-
-      }
-      lmin /= i;
-      lmax /= i;
+      qsort (lbuf2, t_max, sizeof (int), comp);
+      lmin = (lbuf2[1] + lbuf2[2] + lbuf2[3]) / 3;
+      lmax = (lbuf2[t_max - 3] + lbuf2[t_max - 2] + lbuf2[t_max - 1]) / 3;
 
       if (state->rf_mod == QPSK_MODE)
       {

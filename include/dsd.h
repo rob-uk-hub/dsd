@@ -460,6 +460,10 @@ typedef struct
 
   int  SlotToOnlyDecode;  /* 1 = Decode only slot 1 ; 0 = Decode only slot 2 */
 
+  char UseSpecificDmr49BitsAmbeKeyStream[49]; /* 49 bits of AMBE voice samples */
+  int  UseSpecificDmr49BitsAmbeKeyStreamUsed;
+  char UseSpecificDmrAmbeSuperFrameKeyStream[49 * 18]; /* 49 bits of AMBE voice sample x 18 DMR frames = 882 bits */
+  int  UseSpecificDmrAmbeSuperFrameKeyStreamUsed;
 } dsd_opts;
 
 typedef struct
