@@ -80,6 +80,7 @@ void DmrFullLinkControlDecode(dsd_opts * opts, dsd_state * state, uint8_t InputL
   char LCDataBytes[12];
   unsigned int Offset = 0;
   unsigned int BitToCheck = 0;
+  unsigned int TalkerAliasBlockNumber = 0;
   FullLinkControlPDU_t * FullLCOutputStruct;
 
   if((InputLCDataBit == NULL) || (opts == NULL) || (state == NULL)) return;
@@ -191,17 +192,26 @@ void DmrFullLinkControlDecode(dsd_opts * opts, dsd_state * state, uint8_t InputL
         FullLCOutputStruct->FeatureSetID = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[8], 8);
 
         /* Store talker alias header values */
-        FullLCOutputStruct->TalkerAliasHeaderDataFormat = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[0], 2);
-        FullLCOutputStruct->TalkerAliasHeaderDataLength = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[2], 5);
+        FullLCOutputStruct->TalkerAliasHeaderDataFormat = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[16], 2);
+        FullLCOutputStruct->TalkerAliasHeaderDataLength = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[18], 5);
+
+        /* Initialize the content of others talker alias buffers */
+        memset(FullLCOutputStruct->TalkerAliasBlock1Data, 0, sizeof(FullLCOutputStruct->TalkerAliasBlock1Data));
+        memset(FullLCOutputStruct->TalkerAliasBlock2Data, 0, sizeof(FullLCOutputStruct->TalkerAliasBlock3Data));
+        memset(FullLCOutputStruct->TalkerAliasBlock3Data, 0, sizeof(FullLCOutputStruct->TalkerAliasBlock3Data));
 
         for(i = 0; i < 49; i++)
         {
-          FullLCOutputStruct->TalkerAliasHeaderData[i] = InputLCDataBit[i + 7];
+          FullLCOutputStruct->TalkerAliasHeaderData[i] = InputLCDataBit[i + 23];
         }
+
+        fprintf(stderr, "| Talker Alias Header  ");
+        TalkerAliasBlockNumber = 0;
 
         /* Decode the talker alias */
         PrintDmrTalkerAliasFromLinkControlData(FullLCOutputStruct->TalkerAliasHeaderDataFormat,
                                                FullLCOutputStruct->TalkerAliasHeaderDataLength,
+                                               TalkerAliasBlockNumber,
                                                FullLCOutputStruct->TalkerAliasHeaderData,
                                                FullLCOutputStruct->TalkerAliasBlock1Data,
                                                FullLCOutputStruct->TalkerAliasBlock2Data,
@@ -259,17 +269,34 @@ void DmrFullLinkControlDecode(dsd_opts * opts, dsd_state * state, uint8_t InputL
         FullLCOutputStruct->FeatureSetID = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[8], 8);
 
         /* Store the Talker Alias block data */
-        if((FullLCOutputStruct->FullLinkControlOpcode & 0b111111) == 0b000101) DataPointer = FullLCOutputStruct->TalkerAliasBlock1Data;
-        else if((FullLCOutputStruct->FullLinkControlOpcode & 0b111111) == 0b000110) DataPointer = FullLCOutputStruct->TalkerAliasBlock2Data;
-        else DataPointer = FullLCOutputStruct->TalkerAliasBlock3Data;
+        if((FullLCOutputStruct->FullLinkControlOpcode & 0b111111) == 0b000101)
+        {
+          DataPointer = FullLCOutputStruct->TalkerAliasBlock1Data;
+          fprintf(stderr, "| Talker Alias Block 1 ");
+          TalkerAliasBlockNumber = 1;
+        }
+        else if((FullLCOutputStruct->FullLinkControlOpcode & 0b111111) == 0b000110)
+        {
+          DataPointer = FullLCOutputStruct->TalkerAliasBlock2Data;
+          fprintf(stderr, "| Talker Alias Block 2 ");
+          TalkerAliasBlockNumber = 2;
+        }
+        else
+        {
+          DataPointer = FullLCOutputStruct->TalkerAliasBlock3Data;
+          fprintf(stderr, "| Talker Alias Block 3 ");
+          TalkerAliasBlockNumber = 3;
+        }
+
         for(i = 0; i < 56; i++)
         {
-          DataPointer[i] = (unsigned char)InputLCDataBit[i + 7];
+          DataPointer[i] = (unsigned char)InputLCDataBit[i + 16];
         }
 
         /* Decode the talker alias */
         PrintDmrTalkerAliasFromLinkControlData(FullLCOutputStruct->TalkerAliasHeaderDataFormat,
                                                FullLCOutputStruct->TalkerAliasHeaderDataLength,
+                                               TalkerAliasBlockNumber,
                                                FullLCOutputStruct->TalkerAliasHeaderData,
                                                FullLCOutputStruct->TalkerAliasBlock1Data,
                                                FullLCOutputStruct->TalkerAliasBlock2Data,
@@ -676,16 +703,20 @@ void PrintDmrGpsPositionFromLinkControlData(unsigned int GPSLongitude,
  */
 void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataFormat,
                                             unsigned int  TalkerAliasHeaderDataLength,
+                                            unsigned int  TalkerAliasBlockNumber,
                                             unsigned char TalkerAliasHeaderData[49],
                                             unsigned char TalkerAliasBlock1Data[56],
                                             unsigned char TalkerAliasBlock2Data[56],
                                             unsigned char TalkerAliasBlock3Data[56])
 {
   int ReadSize = 0;
+  int ReadOffset = 0;
+  int NumberOfByteRead = 0;
+  unsigned int NumberOfBlockToReceive = 0;
   char CharacterFormat[32] = {0};
   char TalkerAliasCompleteData[217]; /* Complete block data (49 + 56 + 56 + 56 bits = 217 bits) */
   char FinalTalkerAlias[32] = {0};
-  int i, j, k;
+  int i, j;
   char Temp;
 
   if((TalkerAliasHeaderData == NULL) || (TalkerAliasBlock1Data == NULL) ||
@@ -697,6 +728,7 @@ void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataF
     case 0b00:
     {
       ReadSize = 7;
+      ReadOffset = 0;
       sprintf(CharacterFormat, "7 bits character");
       break;
     }
@@ -704,6 +736,7 @@ void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataF
     case 0b01:
     {
       ReadSize = 8;
+      ReadOffset = 1;
       sprintf(CharacterFormat, "ISO 8 bit character");
       break;
     }
@@ -711,6 +744,7 @@ void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataF
     case 0b10:
     {
       ReadSize = 8;
+      ReadOffset = 1;
       sprintf(CharacterFormat, "Unicode UTF-8");
       break;
     }
@@ -718,6 +752,7 @@ void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataF
     case 0b11:
     {
       ReadSize = 8;
+      ReadOffset = 1;
       sprintf(CharacterFormat, "Unicode UTF-16BE");
       break;
     }
@@ -725,6 +760,7 @@ void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataF
     default:
     {
       ReadSize = 7;
+      ReadOffset = 0;
       sprintf(CharacterFormat, "Unknown character");
       break;
     }
@@ -737,20 +773,37 @@ void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataF
   for(i = 0; i < 56; i++, j++) TalkerAliasCompleteData[j] = TalkerAliasBlock3Data[i];
 
   /* Reconstitutes the complete talker alias message (in bytes/characters format) */
-  for(i = 0, k = 0; i < (int)(TalkerAliasHeaderDataLength & 0x1F); i++)
+  for(i = 0, NumberOfByteRead = ReadOffset; i < (int)(TalkerAliasHeaderDataLength & 0x1F); i++)
   {
     /* Convert the 7 or 8 bits field into characters */
     for(j = 0, Temp = 0; j < ReadSize; j++)
     {
       Temp  = Temp << 1;
-      Temp |= (TalkerAliasCompleteData[k++] & 1);
+      Temp |= (TalkerAliasCompleteData[NumberOfByteRead++] & 1);
     }
 
     /* Store the 7 or 8 bit character */
     FinalTalkerAlias[i] = Temp;
   }
 
-  fprintf(stderr, "Talker Alias \"%s\" - Format %s", FinalTalkerAlias, CharacterFormat);
+  /* Check the number of block to receive */
+  if(NumberOfByteRead <= 49) NumberOfBlockToReceive = 0;
+  else if((NumberOfByteRead > 49) && (NumberOfByteRead <= (49 + 56))) NumberOfBlockToReceive = 1;
+  else if((NumberOfByteRead > (49 + 56)) && (NumberOfByteRead <= (49 + 56 + 56))) NumberOfBlockToReceive = 2;
+  else NumberOfBlockToReceive = 3;
+
+  /* Display the alias only when all block have been received */
+  if(NumberOfBlockToReceive == TalkerAliasBlockNumber)
+  {
+    fprintf(stderr, "| Length=%u - Value=\"", TalkerAliasHeaderDataLength);
+
+    for(i = 0; i < (int)(TalkerAliasHeaderDataLength & 0x1F); i++)
+    {
+      fprintf(stderr, "%c", FinalTalkerAlias[i] & 0xFF);
+    }
+
+    fprintf(stderr, "\" - Format %s ", CharacterFormat);
+  }
 
 } /* End PrintDmrTalkerAliasFromLinkControlData() */
 

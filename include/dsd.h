@@ -1019,6 +1019,7 @@ void PrintDmrGpsPositionFromLinkControlData(unsigned int GPSLongitude,
                                            unsigned int GPSPositionError);
 void PrintDmrTalkerAliasFromLinkControlData(unsigned int  TalkerAliasHeaderDataFormat,
                                             unsigned int  TalkerAliasHeaderDataLength,
+                                            unsigned int  TalkerAliasBlockNumber,
                                             unsigned char TalkerAliasHeaderData[49],
                                             unsigned char TalkerAliasBlock1Data[56],
                                             unsigned char TalkerAliasBlock2Data[56],
