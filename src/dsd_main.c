@@ -108,6 +108,10 @@ void noCarrier (dsd_opts * opts, dsd_state * state)
   /* Re-init the LICH structure content */
   memset(&state->NxdnLich, 0, sizeof(state->NxdnLich));
 
+  /* Re-init DMR data structure */
+  memset(&state->TS1SuperFrame.Data, 0, sizeof(DMRDataPDU_t));
+  memset(&state->TS2SuperFrame.Data, 0, sizeof(DMRDataPDU_t));
+
 } /* End noCarrier() */
 
 

@@ -181,6 +181,7 @@ typedef struct
   unsigned int  RestChannel;
   unsigned int  ActiveChannel1;
   unsigned int  ActiveChannel2;
+  unsigned int  NeighborsSites[6];
   unsigned int  DataValidity;      /* 0 = All Full LC data are incorrect ; 1 = Full LC data are correct (CRC checked OK) */
 }FullLinkControlPDU_t;
 

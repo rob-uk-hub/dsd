@@ -112,6 +112,7 @@ void DmrFullLinkControlDecode(dsd_opts * opts, dsd_state * state, uint8_t InputL
     case 0b000000:  /* Grp_V_Ch_Usr PDU content - See ETSI TS 102 361-2 §7.1.1.1 Group Voice Channel User LC PDU */
     case 0b000011:  /* PUU_V_Ch_Usr content - See ETSI TS 102 361-2 §7.1.1.2 Unit to Unit Voice Channel User LC PDU */
     case 0b010000:  /* Determined experimentally */
+    case 0b100000:  /* Determined experimentally (on a Cap+ network) */
     case 0b110000:  /* Terminator Data Link Control (TD_LC) - See ETSI TS 102 361-3 §7.1.1.1 Terminator Data Link Control PDU */
     {
       /* Store the Protect Flag (PF) bit */
@@ -446,15 +447,26 @@ void DmrFullLinkControlDecode(dsd_opts * opts, dsd_state * state, uint8_t InputL
       /* Display the number of available channels */
       fprintf(stderr, "| Cap+ RestCh=%02u  ", FullLCOutputStruct->RestChannel);
 
+      /* Display the number of neighbors */
+      fprintf(stderr, "Neighbors= ");
+
+      for(i = 0; i < 6; i++)
+      {
+        FullLCOutputStruct->NeighborsSites[i] = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[(i * 8) + 32], 4);
+        if(FullLCOutputStruct->NeighborsSites[i]) fprintf(stderr, "%u ", FullLCOutputStruct->NeighborsSites[i]);
+      }
+
+      fprintf(stderr, "| ");
+
       /* Convert all bit received to bytes */
       for(i = 0; i < 12; i++) LCDataBytes[i] = (char)ConvertBitIntoBytes(&InputLCDataBit[i * 8], 8);
 
-      fprintf(stderr, " [LB=%u  PF=%u  CSBKO=0x%02X  FID=0x%02X  DATA=%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X  CRC=0x%02X%02X] | ",
-              FullLCOutputStruct->LastBlock, FullLCOutputStruct->ProtectFlag, FullLCOutputStruct->FullLinkCSBKOpcode & 0b111111,
-              FullLCOutputStruct->FeatureSetID,
-              LCDataBytes[2]  & 0xFF, LCDataBytes[3]  & 0xFF, LCDataBytes[4] & 0xFF, LCDataBytes[5] & 0xFF,
-              LCDataBytes[6]  & 0xFF, LCDataBytes[7]  & 0xFF, LCDataBytes[8] & 0xFF, LCDataBytes[9] & 0xFF,
-              LCDataBytes[10] & 0xFF, LCDataBytes[11] & 0xFF);
+      //fprintf(stderr, " [LB=%u  PF=%u  CSBKO=0x%02X  FID=0x%02X  DATA=%02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X  CRC=0x%02X%02X] | ",
+      //        FullLCOutputStruct->LastBlock, FullLCOutputStruct->ProtectFlag, FullLCOutputStruct->FullLinkCSBKOpcode & 0b111111,
+      //        FullLCOutputStruct->FeatureSetID,
+      //        LCDataBytes[2]  & 0xFF, LCDataBytes[3]  & 0xFF, LCDataBytes[4] & 0xFF, LCDataBytes[5] & 0xFF,
+      //        LCDataBytes[6]  & 0xFF, LCDataBytes[7]  & 0xFF, LCDataBytes[8] & 0xFF, LCDataBytes[9] & 0xFF,
+      //        LCDataBytes[10] & 0xFF, LCDataBytes[11] & 0xFF);
 
       //fprintf(stderr, "| Data=0x%02X", LCDataBytes[0] & 0xFF);
       //for(i = 1; i < 10; i++)
