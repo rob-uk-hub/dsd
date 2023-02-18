@@ -184,6 +184,16 @@ void initOpts (dsd_opts * opts)
   opts->UseSpecificDmr49BitsAmbeKeyStreamUsed = 0;
   memset(opts->UseSpecificDmrAmbeSuperFrameKeyStream, 0, sizeof(opts->UseSpecificDmrAmbeSuperFrameKeyStream));
   opts->UseSpecificDmrAmbeSuperFrameKeyStreamUsed = 0;
+
+  memset(opts->UseSpecificNxdn49BitsAmbeKeyStream, 0, sizeof(opts->UseSpecificNxdn49BitsAmbeKeyStream));
+  opts->UseSpecificNxdn49BitsAmbeKeyStreamUsed = 0;
+  memset(opts->UseSpecificNxdnAmbeSuperFrameKeyStream, 0, sizeof(opts->UseSpecificNxdnAmbeSuperFrameKeyStream));
+  opts->UseSpecificNxdnAmbeSuperFrameKeyStreamUsed = 0;
+
+  memset(opts->UseSpecificdPMR49BitsAmbeKeyStream, 0, sizeof(opts->UseSpecificdPMR49BitsAmbeKeyStream));
+  opts->UseSpecificdPMR49BitsAmbeKeyStreamUsed = 0;
+  memset(opts->UseSpecificdPMRAmbeSuperFrameKeyStream, 0, sizeof(opts->UseSpecificdPMRAmbeSuperFrameKeyStream));
+  opts->UseSpecificdPMRAmbeSuperFrameKeyStreamUsed = 0;
 } /* End initOpts() */
 
 void initState (dsd_state * state)
@@ -442,10 +452,33 @@ void usage(void)
   fprintf(stderr, "  -DPMRPrintAmbeVoiceSampleBin  Print all dPMR AMBE voice sample in binary format\n");
   fprintf(stderr, "\n");
 #endif /* BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY */
+  fprintf(stderr, "  -DPMRForceAmbe49BitsKeyStreamHex=<value> Force AMBE voice decoding with a specific key stream\n");
+  fprintf(stderr, "                                  <value> = a 7 bytes hexadecimal value\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "  -DPMRForceAmbe49BitsKeyStreamBin=<value> Force AMBE voice decoding with a specific key stream\n");
+  fprintf(stderr, "                                  <value> = a 49 bits length ASCII binary value string\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "  -DPMRForceAmbeSuperFrameKeyStreamHex=<value> Force AMBE voice decoding with a specific key stream\n");
+  fprintf(stderr, "                                  <value> = a 98 bytes hexadecimal string\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "  -DPMRForceAmbeSuperFrameKeyStreamBin=<value> Force AMBE voice decoding with a specific key stream\n");
+  fprintf(stderr, "                                  <value> = a 784 bits length (49 bits * 16 voice frames) ASCII binary value\n");
 #ifdef BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY
   fprintf(stderr, "  -NXDNPrintAmbeVoiceSampleHex  Print all dPMR AMBE voice sample in hexadecimal format\n");
   fprintf(stderr, "\n");
 #endif /* BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY */
+  fprintf(stderr, "  -NxdnForceAmbe49BitsKeyStreamHex=<value> Force AMBE voice decoding with a specific key stream\n");
+  fprintf(stderr, "                                <value> = a 7 bytes hexadecimal value\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "  -NxdnForceAmbe49BitsKeyStreamBin=<value> Force AMBE voice decoding with a specific key stream\n");
+  fprintf(stderr, "                                <value> = a 49 bits length ASCII binary value string\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "  -NxdnForceAmbeSuperFrameKeyStreamHex=<value> Force AMBE voice decoding with a specific key stream\n");
+  fprintf(stderr, "                                <value> = a 98 bytes hexadecimal string\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "  -NxdnForceAmbeSuperFrameKeyStreamBin=<value> Force AMBE voice decoding with a specific key stream\n");
+  fprintf(stderr, "                                <value> = a 784 bits length (49 bits * 16 voice frames) ASCII binary value\n");
+  fprintf(stderr, "\n");
 #ifdef BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY
   fprintf(stderr, "  -DisplaySpecialFormat         Display AMBE frame in a special format\n");
   fprintf(stderr, "\n");
@@ -616,7 +649,10 @@ int main (int argc, char **argv)
   dsd_state state;
   char versionstr[25];
 
-  int dmr_specific_keystream_valid = 0;
+
+  int dmr_specific_keystream_valid  = 0;
+  int nxdn_specific_keystream_valid = 0;
+  int dpmr_specific_keystream_valid = 0;
 
   int NbDigit = 0;
   char TempBuffer[1024] = {0};
@@ -1334,17 +1370,559 @@ int main (int argc, char **argv)
         if(strcmp("PMRPrintAmbeVoiceSampleHex", optarg) == 0) state.printdPMRAmbeVoiceSampleHex  = 1;
         if(strcmp("PMRPrintAmbeVoiceSampleBin", optarg) == 0) state.printdPMRAmbeVoiceSampleBin  = 1;
 #endif /* BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY */
-        break;
 
-        case 'N':
+
+        if(strncmp("PMRForceAmbe49BitsKeyStreamHex=", optarg, 31) == 0)
         {
+          dpmr_specific_keystream_valid = 1;
+          memset(TempBuffer, 0, sizeof(TempBuffer));
+          memset(TempBuffer2, 0, sizeof(TempBuffer2));
+
+          /* Get the specific Key in ASCII format */
+          sscanf(optarg + 31, "%s", TempBuffer);
+          Length = strlen(TempBuffer);
+
+          /* An AMBE sample = 49 bit = approx 7 bytes = 14 ASCII characters */
+          if(Length != 14)
+          {
+            /* Wrong length => Specific key is invalid */
+            dpmr_specific_keystream_valid = 0;
+          }
+
+          if(dpmr_specific_keystream_valid)
+          {
+            /* A 49 bit specific key has 7 bytes length,
+             * convert the ASCII format into hex format */
+            for(i = 0; i < 7; i++)
+            {
+              Result = (int)ConvertAsciiToByte((uint8_t)TempBuffer[i * 2], (uint8_t)TempBuffer[(i * 2) + 1], (uint8_t*)&TempBuffer2[i]);
+
+              /* Check the ASII to byte conversion status */
+              if(Result != 0)
+              {
+                /* ASCII to byte conversion status error => Specific key stream is invalid */
+                dpmr_specific_keystream_valid = 0;
+
+                /* Exit the "for" loop" */
+                break;
+              }
+            } /* End for(i = 0; i > 7; i++) */
+          } /* End if(dpmr_specific_keystream_valid) */
+
+          if(dpmr_specific_keystream_valid)
+          {
+            Convert7BytesInto49BitSample(TempBuffer2, opts.UseSpecificdPMR49BitsAmbeKeyStream);
+            fprintf(stderr, "Force decoding AMBE audio sample with the following specific Key stream = %s (HEX) = ", TempBuffer);
+            for(i = 0; i < 49; i++)
+            {
+              fprintf(stderr, "%d", opts.UseSpecificdPMR49BitsAmbeKeyStream[i]);
+            }
+            fprintf(stderr, " (BIN)\n");
+
+            /* Lock the current dPMR Key Stream */
+            opts.UseSpecificdPMR49BitsAmbeKeyStreamUsed = 1;
+          } /* End if(dpmr_specific_keystream_valid) */
+        } /* End if(strncmp("PMRForceAmbe49BitsKeyStreamHex=", optarg, 31) == 0) */
+
+
+        if(strncmp("XDNForceAmbe49BitsKeyStreamBin=", optarg, 31) == 0)
+        {
+          dpmr_specific_keystream_valid = 1;
+          memset(TempBuffer, 0, sizeof(TempBuffer));
+          memset(TempBuffer2, 0, sizeof(TempBuffer2));
+
+          /* Get the specific Key in ASCII format */
+          sscanf(optarg + 31, "%s", TempBuffer);
+          Length = strlen(TempBuffer);
+
+          /* An AMBE sample = 49 bit */
+          if(Length != 49)
+          {
+            /* Wrong length => Specific key is invalid */
+            dpmr_specific_keystream_valid = 0;
+
+            fprintf(stderr, "The specific key stream length must be 49 bits long instead of %d", Length);
+          }
+
+          if(dpmr_specific_keystream_valid)
+          {
+            for(i = 0; i < 49; i++)
+            {
+              if((TempBuffer[i] == '0') || (TempBuffer[i] == '1'))
+              {
+                opts.UseSpecificdPMR49BitsAmbeKeyStream[i] = (TempBuffer[i] - '0') & 1;
+              }
+              else
+              {
+                /* Conversion status error => Specific key stream is invalid */
+                dpmr_specific_keystream_valid = 0;
+
+                fprintf(stderr, "dPMRForceAmbe49BitsKeyStreamBin - Invalid byte detected : 0x%02X\n", TempBuffer[i]);
+
+                /* Exit the "for" loop" */
+                break;
+              }
+            }
+          } /* End if(dpmr_specific_keystream_valid) */
+
+          if(dpmr_specific_keystream_valid)
+          {
+            Convert49BitSampleInto7Bytes(opts.UseSpecificdPMR49BitsAmbeKeyStream, TempBuffer2);
+            fprintf(stderr, "Force decoding AMBE audio sample with the following specific Key stream = ");
+
+            for(i = 0; i < 7; i++)
+            {
+              fprintf(stderr, "%02X", TempBuffer2[i] & 0xFF);
+            }
+            fprintf(stderr, " (HEX) = ");
+            for(i = 0; i < 49; i++)
+            {
+              fprintf(stderr, "%d", opts.UseSpecificdPMR49BitsAmbeKeyStream[i]);
+            }
+            fprintf(stderr, " (BIN)\n");
+
+            /* Lock the current dPMR Key Stream */
+            opts.UseSpecificdPMR49BitsAmbeKeyStreamUsed = 1;
+          } /* End if(dpmr_specific_keystream_valid) */
+        } /* End if(strncmp("PMRForceAmbe49BitsKeyStreamBin=", optarg, 31) == 0) */
+
+
+        if(strncmp("PMRForceAmbeSuperFrameKeyStreamHex=", optarg, 35) == 0)
+        {
+          dpmr_specific_keystream_valid = 1;
+          memset(TempBuffer, 0, sizeof(TempBuffer));
+          memset(TempBuffer2, 0, sizeof(TempBuffer2));
+
+          /* Get the specific Key in ASCII format */
+          sscanf(optarg + 35, "%s", TempBuffer);
+          Length = strlen(TempBuffer);
+
+          /* An entire AMBE dPMR voice superframe = 49 bits x 16 frames = 784 bits = 98 bytes = 196 ASCII characters */
+          if(Length != 196)
+          {
+            /* Wrong length => Specific key is invalid */
+            dpmr_specific_keystream_valid = 0;
+
+            fprintf(stderr, "The specific key stream length must be 196 ASCII HEX characters long instead of %d", Length);
+          }
+
+          if(dpmr_specific_keystream_valid)
+          {
+            /* Convert the ASCII format into hex format */
+            for(i = 0; i < 98; i++)
+            {
+              Result = (int)ConvertAsciiToByte((uint8_t)TempBuffer[i * 2], (uint8_t)TempBuffer[(i * 2) + 1], (uint8_t*)&TempBuffer2[i]);
+
+              /* Check the ASII to byte conversion status */
+              if(Result != 0)
+              {
+                /* ASCII to byte conversion status error => Spacific key stream is invalid */
+                dpmr_specific_keystream_valid = 0;
+
+                fprintf(stderr, "dPMRForceAmbeSuperFrameKeyStreamHex - Invalid byte detected at index %d : 0x%02X\n", i, TempBuffer2[i]);
+
+                /* Exit the "for" loop" */
+                break;
+              }
+
+              opts.UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 8) + 0] = (TempBuffer2[i] >> 7) & 1;
+              opts.UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 8) + 1] = (TempBuffer2[i] >> 6) & 1;
+              opts.UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 8) + 2] = (TempBuffer2[i] >> 5) & 1;
+              opts.UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 8) + 3] = (TempBuffer2[i] >> 4) & 1;
+              opts.UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 8) + 4] = (TempBuffer2[i] >> 3) & 1;
+              opts.UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 8) + 5] = (TempBuffer2[i] >> 2) & 1;
+              opts.UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 8) + 6] = (TempBuffer2[i] >> 1) & 1;
+              opts.UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 8) + 7] = (TempBuffer2[i] >> 0) & 1;
+
+            } /* End for(i = 0; i < 98; i++) */
+          } /* End if(dpmr_specific_keystream_valid) */
+
+          if(dpmr_specific_keystream_valid)
+          {
+            for(i = 0; i < 98; i++)
+            {
+              if(i < (int)sizeof(opts.UseSpecificdPMRAmbeSuperFrameKeyStream))
+              {
+                TempBuffer2[i] = (char)ConvertBitIntoBytes((uint8_t *)&opts.UseSpecificdPMRAmbeSuperFrameKeyStream[i * 8], 8) & 0xFF;
+              }
+              else
+              {
+                TempBuffer2[i] = 0;
+              }
+            }
+
+            fprintf(stderr, "Force decoding AMBE audio sample with the following specific Key stream = ");
+
+            for(i = 0; i < 98; i++)
+            {
+              fprintf(stderr, "%02X", TempBuffer2[i] & 0xFF);
+            }
+            fprintf(stderr, " (HEX) = ");
+            for(i = 0; i < (49 * 16); i++)
+            {
+              fprintf(stderr, "%d", opts.UseSpecificdPMRAmbeSuperFrameKeyStream[i]);
+            }
+            fprintf(stderr, " (BIN)\n");
+
+            /* Lock the current dPMR Key Stream */
+            opts.UseSpecificdPMRAmbeSuperFrameKeyStreamUsed = 1;
+          } /* End if(dpmr_specific_keystream_valid) */
+        } /* End if(strncmp("PMRForceAmbe49BitsKeyStreamHex=", optarg, 35) == 0) */
+
+
+        if(strncmp("PMRForceAmbeSuperFrameKeyStreamBin=", optarg, 35) == 0)
+        {
+          dpmr_specific_keystream_valid = 1;
+          memset(TempBuffer, 0, sizeof(TempBuffer));
+          memset(TempBuffer2, 0, sizeof(TempBuffer2));
+
+          /* Get the specific Key in ASCII format */
+          sscanf(optarg + 35, "%s", TempBuffer);
+          Length = strlen(TempBuffer);
+
+          /* An entire AMBE dPMR superframe = 49 bits x 16 frames = 784 bits */
+          if(Length != (49 * 16))
+          {
+            /* Wrong length => Specific key is invalid */
+            dpmr_specific_keystream_valid = 0;
+
+            fprintf(stderr, "The specific key stream length must be 784 bits long instead of %d", Length);
+          }
+
+          if(dpmr_specific_keystream_valid)
+          {
+            for(i = 0; i < (49 * 16); i++)
+            {
+              if((TempBuffer[i] == '0') || (TempBuffer[i] == '1'))
+              {
+                opts.UseSpecificdPMRAmbeSuperFrameKeyStream[i] = (TempBuffer[i] - '0') & 1;
+              }
+              else
+              {
+                /* Conversion status error => Specific key stream is invalid */
+                dpmr_specific_keystream_valid = 0;
+
+                fprintf(stderr, "DPMRForceAmbeSuperFrameKeyStreamBin - Invalid byte detected : 0x%02X\n", TempBuffer[i]);
+
+                /* Exit the "for" loop" */
+                break;
+              }
+            }
+          } /* End if(dpmr_specific_keystream_valid) */
+
+          if(dpmr_specific_keystream_valid)
+          {
+            for(i = 0; i < 98; i++)
+            {
+              if(i < (int)sizeof(opts.UseSpecificdPMRAmbeSuperFrameKeyStream))
+              {
+                TempBuffer2[i] = (char)ConvertBitIntoBytes((uint8_t *)&opts.UseSpecificdPMRAmbeSuperFrameKeyStream[i * 8], 8) & 0xFF;
+              }
+              else
+              {
+                TempBuffer2[i] = 0;
+              }
+            }
+
+            fprintf(stderr, "Force decoding AMBE audio sample with the following specific Key stream = ");
+
+            for(i = 0; i < 98; i++)
+            {
+              fprintf(stderr, "%02X", TempBuffer2[i] & 0xFF);
+            }
+            fprintf(stderr, " (HEX) = ");
+            for(i = 0; i < (49 * 16); i++)
+            {
+              fprintf(stderr, "%d", opts.UseSpecificdPMRAmbeSuperFrameKeyStream[i]);
+            }
+            fprintf(stderr, " (BIN)\n");
+
+            /* Lock the current dPMR Key Stream */
+            opts.UseSpecificdPMRAmbeSuperFrameKeyStreamUsed = 1;
+          } /* End if(dpmr_specific_keystream_valid) */
+        } /* End if(strncmp("PMRForceAmbe49BitsKeyStreamBin=", optarg, 35) == 0) */
+
+        break;
+      } /* End case 'D' */
+
+      case 'N':
+      {
 #ifdef BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY
-          if(strcmp("XDNPrintAmbeVoiceSampleHex", optarg) == 0) state.printNXDNAmbeVoiceSampleHex  = 1;
+        if(strcmp("XDNPrintAmbeVoiceSampleHex", optarg) == 0) state.printNXDNAmbeVoiceSampleHex  = 1;
 #endif /* BUILD_DSD_WITH_FRAME_CONTENT_DISPLAY */
 
-          break;
-        } /* End case 'N' */
-      }
+        if(strncmp("xdnForceAmbe49BitsKeyStreamHex=", optarg, 31) == 0)
+        {
+          nxdn_specific_keystream_valid = 1;
+          memset(TempBuffer, 0, sizeof(TempBuffer));
+          memset(TempBuffer2, 0, sizeof(TempBuffer2));
+
+          /* Get the specific Key in ASCII format */
+          sscanf(optarg + 31, "%s", TempBuffer);
+          Length = strlen(TempBuffer);
+
+          /* An AMBE sample = 49 bit = approx 7 bytes = 14 ASCII characters */
+          if(Length != 14)
+          {
+            /* Wrong length => Specific key is invalid */
+            nxdn_specific_keystream_valid = 0;
+          }
+
+          if(nxdn_specific_keystream_valid)
+          {
+            /* A 49 bit specific key has 7 bytes length,
+             * convert the ASCII format into hex format */
+            for(i = 0; i < 7; i++)
+            {
+              Result = (int)ConvertAsciiToByte((uint8_t)TempBuffer[i * 2], (uint8_t)TempBuffer[(i * 2) + 1], (uint8_t*)&TempBuffer2[i]);
+
+              /* Check the ASII to byte conversion status */
+              if(Result != 0)
+              {
+                /* ASCII to byte conversion status error => Specific key stream is invalid */
+                nxdn_specific_keystream_valid = 0;
+
+                /* Exit the "for" loop" */
+                break;
+              }
+            } /* End for(i = 0; i > 7; i++) */
+          } /* End if(nxdn_specific_keystream_valid) */
+
+          if(nxdn_specific_keystream_valid)
+          {
+            Convert7BytesInto49BitSample(TempBuffer2, opts.UseSpecificNxdn49BitsAmbeKeyStream);
+            fprintf(stderr, "Force decoding AMBE audio sample with the following specific Key stream = %s (HEX) = ", TempBuffer);
+            for(i = 0; i < 49; i++)
+            {
+              fprintf(stderr, "%d", opts.UseSpecificNxdn49BitsAmbeKeyStream[i]);
+            }
+            fprintf(stderr, " (BIN)\n");
+
+            /* Lock the current NXDN Key Stream */
+            opts.UseSpecificNxdn49BitsAmbeKeyStreamUsed = 1;
+          } /* End if(nxdn_specific_keystream_valid) */
+        } /* End if(strncmp("xdnForceAmbe49BitsKeyStreamHex=", optarg, 31) == 0) */
+
+
+        if(strncmp("XDNForceAmbe49BitsKeyStreamBin=", optarg, 31) == 0)
+        {
+          nxdn_specific_keystream_valid = 1;
+          memset(TempBuffer, 0, sizeof(TempBuffer));
+          memset(TempBuffer2, 0, sizeof(TempBuffer2));
+
+          /* Get the specific Key in ASCII format */
+          sscanf(optarg + 31, "%s", TempBuffer);
+          Length = strlen(TempBuffer);
+
+          /* An AMBE sample = 49 bit */
+          if(Length != 49)
+          {
+            /* Wrong length => Specific key is invalid */
+            nxdn_specific_keystream_valid = 0;
+
+            fprintf(stderr, "The specific key stream length must be 49 bits long instead of %d", Length);
+          }
+
+          if(nxdn_specific_keystream_valid)
+          {
+            for(i = 0; i < 49; i++)
+            {
+              if((TempBuffer[i] == '0') || (TempBuffer[i] == '1'))
+              {
+                opts.UseSpecificNxdn49BitsAmbeKeyStream[i] = (TempBuffer[i] - '0') & 1;
+              }
+              else
+              {
+                /* Conversion status error => Specific key stream is invalid */
+                nxdn_specific_keystream_valid = 0;
+
+                fprintf(stderr, "NxdnForceAmbe49BitsKeyStreamBin - Invalid byte detected : 0x%02X\n", TempBuffer[i]);
+
+                /* Exit the "for" loop" */
+                break;
+              }
+            }
+          } /* End if(nxdn_specific_keystream_valid) */
+
+          if(nxdn_specific_keystream_valid)
+          {
+            Convert49BitSampleInto7Bytes(opts.UseSpecificNxdn49BitsAmbeKeyStream, TempBuffer2);
+            fprintf(stderr, "Force decoding AMBE audio sample with the following specific Key stream = ");
+
+            for(i = 0; i < 7; i++)
+            {
+              fprintf(stderr, "%02X", TempBuffer2[i] & 0xFF);
+            }
+            fprintf(stderr, " (HEX) = ");
+            for(i = 0; i < 49; i++)
+            {
+              fprintf(stderr, "%d", opts.UseSpecificNxdn49BitsAmbeKeyStream[i]);
+            }
+            fprintf(stderr, " (BIN)\n");
+
+            /* Lock the current NXDN Key Stream */
+            opts.UseSpecificNxdn49BitsAmbeKeyStreamUsed = 1;
+          } /* End if(nxdn_specific_keystream_valid) */
+        } /* End if(strncmp("xdnForceAmbe49BitsKeyStreamBin=", optarg, 31) == 0) */
+
+        if(strncmp("xdnForceAmbeSuperFrameKeyStreamHex=", optarg, 35) == 0)
+        {
+          nxdn_specific_keystream_valid = 1;
+          memset(TempBuffer, 0, sizeof(TempBuffer));
+          memset(TempBuffer2, 0, sizeof(TempBuffer2));
+
+          /* Get the specific Key in ASCII format */
+          sscanf(optarg + 35, "%s", TempBuffer);
+          Length = strlen(TempBuffer);
+
+          /* An entire AMBE NXDN voice superframe = 49 bits x 16 frames = 784 bits = 98 bytes = 196 ASCII characters */
+          if(Length != 196)
+          {
+            /* Wrong length => Specific key is invalid */
+            nxdn_specific_keystream_valid = 0;
+
+            fprintf(stderr, "The specific key stream length must be 196 ASCII HEX characters long instead of %d", Length);
+          }
+
+          if(nxdn_specific_keystream_valid)
+          {
+            /* Convert the ASCII format into hex format */
+            for(i = 0; i < 98; i++)
+            {
+              Result = (int)ConvertAsciiToByte((uint8_t)TempBuffer[i * 2], (uint8_t)TempBuffer[(i * 2) + 1], (uint8_t*)&TempBuffer2[i]);
+
+              /* Check the ASII to byte conversion status */
+              if(Result != 0)
+              {
+                /* ASCII to byte conversion status error => Spacific key stream is invalid */
+                nxdn_specific_keystream_valid = 0;
+
+                fprintf(stderr, "NxdnForceAmbeSuperFrameKeyStreamHex - Invalid byte detected at index %d : 0x%02X\n", i, TempBuffer2[i]);
+
+                /* Exit the "for" loop" */
+                break;
+              }
+
+              opts.UseSpecificNxdnAmbeSuperFrameKeyStream[(i * 8) + 0] = (TempBuffer2[i] >> 7) & 1;
+              opts.UseSpecificNxdnAmbeSuperFrameKeyStream[(i * 8) + 1] = (TempBuffer2[i] >> 6) & 1;
+              opts.UseSpecificNxdnAmbeSuperFrameKeyStream[(i * 8) + 2] = (TempBuffer2[i] >> 5) & 1;
+              opts.UseSpecificNxdnAmbeSuperFrameKeyStream[(i * 8) + 3] = (TempBuffer2[i] >> 4) & 1;
+              opts.UseSpecificNxdnAmbeSuperFrameKeyStream[(i * 8) + 4] = (TempBuffer2[i] >> 3) & 1;
+              opts.UseSpecificNxdnAmbeSuperFrameKeyStream[(i * 8) + 5] = (TempBuffer2[i] >> 2) & 1;
+              opts.UseSpecificNxdnAmbeSuperFrameKeyStream[(i * 8) + 6] = (TempBuffer2[i] >> 1) & 1;
+              opts.UseSpecificNxdnAmbeSuperFrameKeyStream[(i * 8) + 7] = (TempBuffer2[i] >> 0) & 1;
+
+            } /* End for(i = 0; i < 98; i++) */
+          } /* End if(nxdn_specific_keystream_valid) */
+
+          if(nxdn_specific_keystream_valid)
+          {
+            for(i = 0; i < 98; i++)
+            {
+              if(i < (int)sizeof(opts.UseSpecificNxdnAmbeSuperFrameKeyStream))
+              {
+                TempBuffer2[i] = (char)ConvertBitIntoBytes((uint8_t *)&opts.UseSpecificNxdnAmbeSuperFrameKeyStream[i * 8], 8) & 0xFF;
+              }
+              else
+              {
+                TempBuffer2[i] = 0;
+              }
+            }
+
+            fprintf(stderr, "Force decoding AMBE audio sample with the following specific Key stream = ");
+
+            for(i = 0; i < 98; i++)
+            {
+              fprintf(stderr, "%02X", TempBuffer2[i] & 0xFF);
+            }
+            fprintf(stderr, " (HEX) = ");
+            for(i = 0; i < (49 * 16); i++)
+            {
+              fprintf(stderr, "%d", opts.UseSpecificNxdnAmbeSuperFrameKeyStream[i]);
+            }
+            fprintf(stderr, " (BIN)\n");
+
+            /* Lock the current NXDN Key Stream */
+            opts.UseSpecificNxdnAmbeSuperFrameKeyStreamUsed = 1;
+          } /* End if(nxdn_specific_keystream_valid) */
+        } /* End if(strncmp("xdnForceAmbe49BitsKeyStreamHex=", optarg, 35) == 0) */
+
+
+        if(strncmp("xdnForceAmbeSuperFrameKeyStreamBin=", optarg, 35) == 0)
+        {
+          nxdn_specific_keystream_valid = 1;
+          memset(TempBuffer, 0, sizeof(TempBuffer));
+          memset(TempBuffer2, 0, sizeof(TempBuffer2));
+
+          /* Get the specific Key in ASCII format */
+          sscanf(optarg + 35, "%s", TempBuffer);
+          Length = strlen(TempBuffer);
+
+          /* An entire AMBE NXDN superframe = 49 bits x 16 frames = 784 bits */
+          if(Length != (49 * 16))
+          {
+            /* Wrong length => Specific key is invalid */
+            nxdn_specific_keystream_valid = 0;
+
+            fprintf(stderr, "The specific key stream length must be 784 bits long instead of %d", Length);
+          }
+
+          if(nxdn_specific_keystream_valid)
+          {
+            for(i = 0; i < (49 * 16); i++)
+            {
+              if((TempBuffer[i] == '0') || (TempBuffer[i] == '1'))
+              {
+                opts.UseSpecificNxdnAmbeSuperFrameKeyStream[i] = (TempBuffer[i] - '0') & 1;
+              }
+              else
+              {
+                /* Conversion status error => Specific key stream is invalid */
+                nxdn_specific_keystream_valid = 0;
+
+                fprintf(stderr, "NxdnForceAmbeSuperFrameKeyStreamBin - Invalid byte detected : 0x%02X\n", TempBuffer[i]);
+
+                /* Exit the "for" loop" */
+                break;
+              }
+            }
+          } /* End if(nxdn_specific_keystream_valid) */
+
+          if(nxdn_specific_keystream_valid)
+          {
+            for(i = 0; i < 98; i++)
+            {
+              if(i < (int)sizeof(opts.UseSpecificNxdnAmbeSuperFrameKeyStream))
+              {
+                TempBuffer2[i] = (char)ConvertBitIntoBytes((uint8_t *)&opts.UseSpecificNxdnAmbeSuperFrameKeyStream[i * 8], 8) & 0xFF;
+              }
+              else
+              {
+                TempBuffer2[i] = 0;
+              }
+            }
+
+            fprintf(stderr, "Force decoding AMBE audio sample with the following specific Key stream = ");
+
+            for(i = 0; i < 98; i++)
+            {
+              fprintf(stderr, "%02X", TempBuffer2[i] & 0xFF);
+            }
+            fprintf(stderr, " (HEX) = ");
+            for(i = 0; i < (49 * 16); i++)
+            {
+              fprintf(stderr, "%d", opts.UseSpecificNxdnAmbeSuperFrameKeyStream[i]);
+            }
+            fprintf(stderr, " (BIN)\n");
+
+            /* Lock the current NXDN Key Stream */
+            opts.UseSpecificNxdnAmbeSuperFrameKeyStreamUsed = 1;
+          } /* End if(nxdn_specific_keystream_valid) */
+        } /* End if(strncmp("xdnForceAmbe49BitsKeyStreamBin=", optarg, 35) == 0) */
+
+        break;
+      } /* End case 'N' */
+
       case '1':
       {
         opts.SlotToOnlyDecode = 1;

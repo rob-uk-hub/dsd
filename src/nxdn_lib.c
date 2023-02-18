@@ -1073,6 +1073,24 @@ void NxdnEncryptionStreamGeneration (dsd_opts* opts, dsd_state* state, uint8_t K
     memset(KeyStream, 0, sizeof(uint8_t) * 1664);
   }
 
+  /* Check if we need to force the application of
+   * a specific keystream on NXDN voice frames */
+  if(opts->UseSpecificNxdn49BitsAmbeKeyStreamUsed)
+  {
+    for(i = 0; i < 16; i++)
+    {
+      memcpy(&KeyStream[i * 49], opts->UseSpecificNxdn49BitsAmbeKeyStream, 49);
+    }
+  }
+  else if(opts->UseSpecificNxdnAmbeSuperFrameKeyStreamUsed)
+  {
+    memcpy(KeyStream, opts->UseSpecificNxdnAmbeSuperFrameKeyStream, 784);
+  }
+  else
+  {
+    /* Nothing to do */
+  }
+
 } /* End NxdnEncryptionStreamGeneration() */
 
 

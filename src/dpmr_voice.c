@@ -639,6 +639,28 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
     /* There is 4 AMBE voice sample per voice frame (so 2 x 4 = 8 per superframe) */
     for(i = 0; i < (NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4); i++)
     {
+      /* Check if we need to force the application of
+       * a specific keystream on dPMR voice frames */
+      if(opts->UseSpecificdPMR49BitsAmbeKeyStreamUsed)
+      {
+        for(j = 0; j < 49; j++)
+        {
+          state->dPMRVoiceFS2Frame.AmbeBit[i][j] ^= (opts->UseSpecificdPMR49BitsAmbeKeyStream[j] & 1);
+        }
+      }
+      else if(opts->UseSpecificdPMRAmbeSuperFrameKeyStreamUsed)
+      {
+        for(j = 0; j < 49; j++)
+        {
+          if(PartOfSuperFrame == 2) state->dPMRVoiceFS2Frame.AmbeBit[i][j] ^= (opts->UseSpecificdPMRAmbeSuperFrameKeyStream[(49 * 8) + (i * 49) + j] & 1);
+          else state->dPMRVoiceFS2Frame.AmbeBit[i][j] ^= (opts->UseSpecificdPMRAmbeSuperFrameKeyStream[(i * 49) + j] & 1);
+        }
+      }
+      else
+      {
+        /* Nothing to do */
+      }
+
       errs  = (uint32_t*)&(state->dPMRVoiceFS2Frame.errs1[i]);
       errs2 = (uint32_t*)&(state->dPMRVoiceFS2Frame.errs2[i]);
 

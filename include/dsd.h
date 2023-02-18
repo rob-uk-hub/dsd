@@ -464,6 +464,16 @@ typedef struct
   int  UseSpecificDmr49BitsAmbeKeyStreamUsed;
   char UseSpecificDmrAmbeSuperFrameKeyStream[49 * 18]; /* 49 bits of AMBE voice sample x 18 DMR frames = 882 bits */
   int  UseSpecificDmrAmbeSuperFrameKeyStreamUsed;
+
+  char UseSpecificNxdn49BitsAmbeKeyStream[49]; /* 49 bits of AMBE voice samples */
+  int  UseSpecificNxdn49BitsAmbeKeyStreamUsed;
+  char UseSpecificNxdnAmbeSuperFrameKeyStream[49 * 16]; /* 49 bits of AMBE voice sample x 16 NXDN frames = 784 bits */
+  int  UseSpecificNxdnAmbeSuperFrameKeyStreamUsed;
+
+  char UseSpecificdPMR49BitsAmbeKeyStream[49]; /* 49 bits of AMBE voice samples */
+  int  UseSpecificdPMR49BitsAmbeKeyStreamUsed;
+  char UseSpecificdPMRAmbeSuperFrameKeyStream[49 * 16]; /* 49 bits of AMBE voice sample x 16 NXDN frames = 784 bits */
+  int  UseSpecificdPMRAmbeSuperFrameKeyStreamUsed;
 } dsd_opts;
 
 typedef struct
