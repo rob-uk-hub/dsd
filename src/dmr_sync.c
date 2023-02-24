@@ -1083,6 +1083,15 @@ void ProcessDmrRate12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196],
   /* Increment the number of data block received */
   TSVoiceSupFrame->Data.Rate12NbOfReceivedBlock++;
 
+  /* Prevent any overflow (false positive data burst
+   * decoding will increment the received block counter) */
+  if(TSVoiceSupFrame->Data.Rate12NbOfReceivedBlock >= 127)
+  {
+    /* The buffer may carry up to 127 blocks [0..126],
+     * so limit the block number to its max value (ID 126)*/
+    TSVoiceSupFrame->Data.Rate12NbOfReceivedBlock = 126;
+  }
+
   fprintf(stderr, "| Data=0x%02X", DmrDataByte[0] & 0xFF);
   for(i = 1; i < 12; i++)
   {
@@ -1307,6 +1316,15 @@ void ProcessDmrRate34Data(dsd_opts * opts, dsd_state * state, uint8_t tdibits[98
 
   /* Increment the number of data block received */
   TSVoiceSupFrame->Data.Rate34NbOfReceivedBlock++;
+
+  /* Prevent any overflow (false positive data burst
+   * decoding will increment the received block counter) */
+  if(TSVoiceSupFrame->Data.Rate34NbOfReceivedBlock >= 127)
+  {
+    /* The buffer may carry up to 127 blocks [0..126],
+     * so limit the block number to its max value (ID 126)*/
+    TSVoiceSupFrame->Data.Rate34NbOfReceivedBlock = 126;
+  }
 
   fprintf(stderr, "| Data=0x%02X", DmrDataByte[0] & 0xFF);
   for(i = 1; i < 18; i++)
@@ -1534,6 +1552,15 @@ void ProcessDmrRate1Data(dsd_opts * opts, dsd_state * state, uint8_t info[196], 
 
   /* Increment the number of data block received */
   TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock++;
+
+  /* Prevent any overflow (false positive data burst
+   * decoding will increment the received block counter) */
+  if(TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock >= 127)
+  {
+    /* The buffer may carry up to 127 blocks [0..126],
+     * so limit the block number to its max value (ID 126)*/
+    TSVoiceSupFrame->Data.Rate1NbOfReceivedBlock = 126;
+  }
 
   fprintf(stderr, "| Data=0x%02X", DmrDataByte[0] & 0xFF);
   for(i = 1; i < 24; i++)
