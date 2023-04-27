@@ -441,11 +441,17 @@ void DmrFullLinkControlDecode(dsd_opts * opts, dsd_state * state, uint8_t InputL
       /* Store the number of available channel (RestChannel) */
       FullLCOutputStruct->RestChannel = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[20], 4);
 
+      /* Store the current site (CurrentSite) [Experimentally determined, to be confirmed] */
+      FullLCOutputStruct->CurrentSite = (unsigned int)ConvertBitIntoBytes(&InputLCDataBit[25], 4);
+
       /* Set the Cap+ flag */
       state->CapacityPlusFlag = 1;
 
       /* Display the number of available channels */
       fprintf(stderr, "| Cap+ RestCh=%02u  ", FullLCOutputStruct->RestChannel);
+
+      /* Display the current site */
+      fprintf(stderr, "Site=%02u  ", FullLCOutputStruct->CurrentSite);
 
       /* Display the number of neighbors */
       fprintf(stderr, "Neighbors= ");

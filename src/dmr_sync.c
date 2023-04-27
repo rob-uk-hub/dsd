@@ -1951,6 +1951,7 @@ uint32_t ComputeCrc32Bit(uint8_t * DMRData, uint32_t NbData)
 uint8_t * DmrAlgIdToStr(uint8_t AlgID)
 {
   if(AlgID == 0x21) return (uint8_t *)"ARC4";
+  else if(AlgID == 0x24) return (uint8_t *)"AES128";
   else if(AlgID == 0x25) return (uint8_t *)"AES256";
   else if(AlgID == 0x02) return (uint8_t *)"HYTERA FULL ENC";
   else if(AlgID == 0x05) return (uint8_t *)"AES256 ANYTONE";
