@@ -1942,6 +1942,7 @@ uint32_t ComputeCrc32Bit(uint8_t * DMRData, uint32_t NbData)
  *
  * @param AlgID : The algorithm ID
  *   @arg : 0x21 for ARC4
+ *   @arg : 0x24 for AES128
  *   @arg : 0x25 for AES256
  *   @arg : 0x02 for HYTERA Full encrypt
  *   @arg : 0x05 for AnyTone AES 256
@@ -1992,6 +1993,11 @@ uint8_t * DmrAlgPrivacyModeToStr(uint32_t PrivacyMode)
     case MODE_ENHANCED_PRIVACY_ARC4:
     {
       return (uint8_t *)"EP ARC4";
+      break;
+    }
+    case MODE_ENHANCED_PRIVACY_AES128:
+    {
+      return (uint8_t *)"EP AES128";
       break;
     }
     case MODE_ENHANCED_PRIVACY_AES256:
