@@ -314,7 +314,8 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
   }
   else
   {
-    sprintf(state->fsubtype, "               ");
+    //sprintf(state->fsubtype, "               ");
+    sprintf(state->fsubtype, " DATA UNKNOWN  ");
   }
 
   // Current slot - Second half - Data Payload - 2nd part
@@ -330,8 +331,40 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     info[(2*i) + 99] = (1 & dibit);         // bit 0
   }
 
-  // Skip cach (24 bit = 12 dibit) and next slot 1st half (98 + 10 bit = 49 + 5 dibit)
-  skipDibit (opts, state, 12 + 49 + 5);
+  // CACH (24 bits - 12 dibits)
+  skipDibit (opts, state, 12);
+
+  // Hirst half current slot (98 data bits = 49 dibits)
+  skipDibit (opts, state, 49);
+
+  // First half current slot (10 bits slot type = 5 dibits)
+  //skipDibit (opts, state, 5); // Experimental : Do not skip the last 5 dibit to be sure to resynchronize the next SYNC correctly
+  //NbOfDibitReadAndSkipped += 5;
+  skipDibit (opts, state, 4); // Experimental : Skip only 4 dibit instead of 5 dibit (let 1 bit before the SYNC)
+
+  /* TODO : Experimental, skip the next slot in direct mode */
+  if(state->directmode)
+  {
+    // Next empty slot - SYNC (48 bits - 24 dibits)
+    skipDibit (opts, state, 24);
+
+    // Next empty slot - Second half - Slot Type (10 bits - 5 dibits)
+    skipDibit (opts, state, 5);
+
+    // Next empty slot - Second half - Info data (98 bits - 49 dibits)
+    skipDibit (opts, state, 49);
+
+    // Next valid CACH (24 bits - 12 dibits)
+    skipDibit (opts, state, 12);
+
+    // Next valid slot - First half - Info data (98 bits - 49 dibits)
+    skipDibit (opts, state, 49);
+
+    // Next valid slot - First half - Slot Type (10 bits - 5 dibits)
+    skipDibit (opts, state, 5);
+
+    /* At this step we are ready to decode the next valid SYNC */
+  }
 
   if (opts->errorbars == 1)
   {
@@ -386,12 +419,14 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     /* Burst = MBC Header */
     case 0b0100:
     {
+      /* Nothing to do */
       break;
     }
 
     /* Burst = MBC */
     case 0b0101:
     {
+      /* Nothing to do */
       break;
     }
 
@@ -419,6 +454,7 @@ processDMRdata (dsd_opts * opts, dsd_state * state)
     /* Burst = Slot idle */
     case 0b1001:
     {
+      /* Nothing to do */
       break;
     }
 

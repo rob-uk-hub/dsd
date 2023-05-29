@@ -137,6 +137,7 @@ static void use_symbol (dsd_opts* opts, dsd_state* state, int symbol)
 	// min/max calculation
     lmin = (sbuf2[0] + sbuf2[1]) / 2;
 	lmax = (sbuf2[(opts->ssize - 1)] + sbuf2[(opts->ssize - 2)]) / 2;
+
     state->minbuf[state->midx] = lmin;
     state->maxbuf[state->midx] = lmax;
     if (state->midx == (opts->msize - 1))

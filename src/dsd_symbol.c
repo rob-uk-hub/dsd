@@ -161,15 +161,34 @@ int getSymbol (dsd_opts * opts, dsd_state * state, int have_sync)
        * 25 = -dPMR Frame Sync 2
        * 26 = -dPMR Frame Sync 3
        * 27 = -dPMR Frame Sync 4
+       * 28 = +NXDN (sync only)
+       * 29 = -NXDN (sync only)
+       * 30 = +YSF
+       * 31 = -YSF
+       * 32 = +DMR MS Voice
+       * 33 = +DMR MS Data
+       * 34 = +DMR RC Data
+       * 35 = +P25 P2
+       * 36 = -P25 P2
+       * 37 = +EDACS
+       * 38 = -EDACS
+       * 39 = -DMR MS Voice (inverted)
+       * 40 = -DMR MS Data (inverted)
+       * 41 = -DMR RC Data (inverted)
        */
-      if (state->lastsynctype >= 10 && state->lastsynctype <= 13)
+      if ((state->lastsynctype >= 10 && state->lastsynctype <= 13) ||
+          (state->lastsynctype >= 32 && state->lastsynctype <= 34) ||
+          (state->lastsynctype >= 39 && state->lastsynctype <= 41))
+      {
         sample = dmr_filter(sample);
+      }
       else if (state->lastsynctype == 8  || state->lastsynctype == 9  ||
                state->lastsynctype == 16 || state->lastsynctype == 17 ||
                state->lastsynctype == 20 || state->lastsynctype == 21 ||
                state->lastsynctype == 22 || state->lastsynctype == 23 ||
                state->lastsynctype == 24 || state->lastsynctype == 25 ||
-               state->lastsynctype == 26 || state->lastsynctype == 27)
+               state->lastsynctype == 26 || state->lastsynctype == 27 ||
+               state->lastsynctype == 28 || state->lastsynctype == 29  )
       {
         if(state->samplesPerSymbol == SAMPLE_PER_SYMBOL_NXDN48)
         {

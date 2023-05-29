@@ -70,29 +70,12 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
   mutecurrentslot = 0;
   msMode = 0;
 
-  dibit_p = state->dibit_buf_p - 139;
+  dibit_p = state->dibit_buf_p - 90;
 
   for(j = 0; j < 6; j++)
   {
-    // 2nd half of previous slot (98 data bits after last "Slot Type" part)
-    for(i = 0; i < 49; i++)
-    {
-      if(j > 0)
-      {
-        dibit = getDibit(opts, state);
-      }
-      else
-      {
-        dibit = *dibit_p;
-        dibit_p++;
-        if(opts->inverted_dmr == 1)
-        {
-          dibit = (dibit ^ 2);
-        }
-      }
-    }
 
-    // CACH
+    // CACH (24 bits / 18 dibits)
     for(i = 0; i < 12; i++)
     {
       if(j > 0)
@@ -153,7 +136,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
     fprintf(stderr, "%s ", cachbits);
 #endif
 
-    // current slot frame 1
+    // Current slot AMBE frame 1/3 (72 bits / 36 dibits)
     w = rW;
     x = rX;
     y = rY;
@@ -205,7 +188,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       z++;
     }
 
-    // current slot frame 2 first half
+    // Current slot AMBE frame 2/3 (first half) [36 bits / 18 dibits]
     w = rW;
     x = rX;
     y = rY;
@@ -258,7 +241,8 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
     }
 
     l = 0;
-    // signaling data or sync
+
+    // Signaling data or sync (48 bits - 24 dibits)
     for(i = 0; i < 24; i++)
     {
       if(j > 0)
@@ -428,7 +412,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
     fprintf(stderr, "%s ", syncbits);
 #endif
 
-    // current slot frame 2 second half
+    // Current slot AMBE frame 2/2 (second half) (36 bits / 18 dibits)
     for(i = 0; i < 18; i++)
     {
       dibit = getDibit(opts, state);
@@ -476,7 +460,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       }
     }
 
-    // current slot frame 3
+    // Current slot AMBE frame 3/3 (72 bits / 36 dibits)
     w = rW;
     x = rX;
     y = rY;
@@ -520,7 +504,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       //processMbeFrame (opts, state, NULL, ambe_fr3, NULL);
     }
 
-    // CACH
+    // CACH (24 bits / 18 dibits)
     for(i = 0; i < 12; i++)
     {
       dibit = getDibit(opts, state);
@@ -543,10 +527,10 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
 #endif
 
 
-    // Next slot (only 98 first bits)
+    // Next slot (only 98 first bits / 49 dibits)
     skipDibit (opts, state, 49);
 
-    // Next slot : Slot Type (first part)
+    // Next slot : Slot Type (first part) [10 bits / 5 dibits]
     for(i = 0; i < 5; i++)
     {
       dibit = getDibit(opts, state);
@@ -558,7 +542,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       SlotType[i * 2] = (1 & dibit);        // bit 0
     }
 
-    // Next slot : Signaling data or sync
+    // Next slot : Signaling data or sync (48 bits / 24 dibits)
     for(i = 0; i < 24; i++)
     {
       dibit = getDibit(opts, state);
@@ -572,7 +556,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
     sync[24] = 0;
     syncdata[24] = 0;
 
-    // Next slot : Slot Type (last part)
+    // Next slot : Slot Type (second part) [10 bits / 5 dibits]
     for(i = 0; i < 5; i++)
     {
       dibit = getDibit(opts, state);
@@ -583,6 +567,9 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
       SlotType[(i * 2) + 10] = (1 & (dibit >> 1)); // bit 1
       SlotType[(i * 2) + 10] = (1 & dibit);        // bit 0
     }
+
+    // Next slot (98 last bits / 49 dibits)
+    skipDibit (opts, state, 49);
 
     /* Check SYNC of 2nd slot */
     if((strcmp (sync, DMR_BS_DATA_SYNC) == 0) || (msMode == 1))
@@ -690,8 +677,8 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
 
     if(interrupt_current_slot_decoding)
     {
-      // 2nd half next slot (98 data bits after last "Slot Type" part)
-      skipDibit (opts, state, 49);
+//      // 2nd half next slot (98 data bits after last "Slot Type" part = 49 dibits)
+//      skipDibit (opts, state, 49);
 
       if(voice_sync_next_slot_detected)
       {
@@ -748,14 +735,18 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
 
     if(j == 5)
     {
-      // 2nd half next slot (98 data bits after last "Slot Type" part)
-      skipDibit (opts, state, 49);
-
       // CACH
       skipDibit (opts, state, 12);
 
-      // first half current slot
-      skipDibit (opts, state, 54);
+      // First half current slot (98 data bits = 49 dibits)
+      skipDibit (opts, state, 49);
+
+      // First half current slot (10 bits slot type = 5 dibits)
+      //skipDibit (opts, state, 5); // TODO : Experimental : Do not skip the last 5 dibit to be sure to resynchronize the next SYNC correctly
+      //NbOfDibitReadAndSkipped += 5;
+      skipDibit (opts, state, 4); // Experimental : Skip only 4 dibit instead of 5 dibit (let 1 bit before the SYNC)
+
+      /* At this step we are ready to decode the next valid SYNC */
     }
 
     /* Extract the 49 bits AMBE of the voice frame */

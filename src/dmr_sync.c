@@ -36,7 +36,9 @@ void ProcessDmrPiHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], u
   uint16_t CRCComputed      = 0;
   uint32_t CRCCorrect       = 0;
   uint32_t IrrecoverableErrors = 0;
+  uint32_t FirstIV          = 0;
   uint32_t KeyID            = 0;
+  uint32_t TalkGroup        = 0;
   uint8_t  AlgID            = 0;
   uint8_t  FID              = 0;
   uint8_t  DeInteleavedData[196];
@@ -116,9 +118,32 @@ void ProcessDmrPiHeader(dsd_opts * opts, dsd_state * state, uint8_t info[196], u
   fprintf(stderr, "KeyID=%u ", KeyID);
   fprintf(stderr, "FID=0x%02X ", FID);
 
-  fprintf(stderr, "[Data=%02X", DmrDataByte[0] & 0xFF);
-  for(i = 1; i < 10; i++) fprintf(stderr, "-%02X", DmrDataByte[i] & 0xFF);
-  fprintf(stderr, " CRC=0x%04X] ", CRCExtracted);
+  /* Check Motorola FID (0x10) and DMRA FID (0x0B) */
+  if((FID == 0x10) || (FID == 0x0B))
+  {
+    /* Reconstitute the first IV */
+    FirstIV = 0;
+    FirstIV |= ((DmrDataByte[3] << 24) & 0xFF000000);
+    FirstIV |= ((DmrDataByte[4] << 16) & 0x00FF0000);
+    FirstIV |= ((DmrDataByte[5] <<  8) & 0x0000FF00);
+    FirstIV |= ((DmrDataByte[6] <<  0) & 0x000000FF);
+
+    /* Reconstitute the Talk Group */
+    TalkGroup = 0;
+    TalkGroup |= ((DmrDataByte[7] << 16) & 0x00FF0000);
+    TalkGroup |= ((DmrDataByte[8] <<  8) & 0x0000FF00);
+    TalkGroup |= ((DmrDataByte[9] <<  0) & 0x000000FF);
+
+    fprintf(stderr, "IV=0x%08X ", FirstIV);
+    fprintf(stderr, "TG=%u ", TalkGroup);
+    fprintf(stderr, "CRC=0x%04X ", CRCExtracted);
+  }
+  else
+  {
+    fprintf(stderr, "[Data=%02X", DmrDataByte[0] & 0xFF);
+    for(i = 1; i < 10; i++) fprintf(stderr, "-%02X", DmrDataByte[i] & 0xFF);
+    fprintf(stderr, " CRC=0x%04X] ", CRCExtracted);
+  }
 
   if((IrrecoverableErrors == 0) && CRCCorrect)
   {
@@ -1954,6 +1979,7 @@ uint8_t * DmrAlgIdToStr(uint8_t AlgID)
   if(AlgID == 0x21) return (uint8_t *)"ARC4";
   else if(AlgID == 0x24) return (uint8_t *)"AES128";
   else if(AlgID == 0x25) return (uint8_t *)"AES256";
+  else if(AlgID == 0x01) return (uint8_t *)"ARC4 ANYTONE";
   else if(AlgID == 0x02) return (uint8_t *)"HYTERA FULL ENC";
   else if(AlgID == 0x05) return (uint8_t *)"AES256 ANYTONE";
   else if(AlgID == 0x0E) return (uint8_t *)"HYTERA UNKNOWN";

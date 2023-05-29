@@ -939,6 +939,7 @@ int main (int argc, char **argv)
           opts.mod_qpsk = 0;
           opts.mod_gfsk = 1;
           state.rf_mod = GFSK_MODE;
+          fprintf(stderr, "Enabling only GFSK modulation optimizations.\n");
           fprintf(stderr, "Decoding only DMR/MOTOTRBO frames.\n");
         }
         else if (optarg[0] == 'm')
