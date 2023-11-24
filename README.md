@@ -1,11 +1,9 @@
 [![Build Status](https://travis-ci.org/LouisErigHerve/dsd.svg?branch=master)](https://travis-ci.org/LouisErigHerve/dsd)
 
 # Digital Speech Decoder 1.8.4-dev
-This version of DSD is a fork of existing source code available [here](https://github.com/szechyjs/dsd). It has been modified to integrate some additionnal functionnalities like dPMR decoding.
+This version of DSD is a fork of existing source code available [here](https://github.com/LouisErigHerve/dsd). It has been modified to integrate some additionnal functionnalities including MQTT support
 
-DSD is able to decode [several digital voice formats](https://github.com/LouisErigHerve/dsd/wiki/Supported-formats) from discriminator
-tap audio and synthesize  the decoded speech.  Speech synthesis requires mbelib, which is a separate package.
-
+This fork is focused on the message and location data extaction.
 
 ## Information
 
@@ -35,6 +33,15 @@ overview for some information about how to get started.
 
 You will usually want to write tests for your changes. To run the test suite
 run `make test` from your build directory.
+
+## Building
+
+```
+mkdir -p build
+cd build
+cmake ..
+make
+```
 
 ## License
 Copyright (C) 2010 DSD Author

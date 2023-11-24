@@ -82,7 +82,9 @@ void noCarrier (dsd_opts * opts, dsd_state * state)
   state->aout_max_buf_idx = 0;
   sprintf(state->algid, "________");
   sprintf(state->keyid, "________________");
+#ifdef USE_MBE
   mbe_initMbeParms (state->cur_mp, state->prev_mp, state->prev_mp_enhanced);
+#endif
 
   /* Next part of the dPMR frame is unknown now */
   opts->dPMR_next_part_of_superframe = 0;
@@ -281,10 +283,15 @@ void initState (dsd_state * state)
   sprintf(state->keyid, "________________");
   state->currentslot = 0;
   state->directmode = 0;
+
+#ifdef USE_MBE
   state->cur_mp = malloc (sizeof (mbe_parms));
   state->prev_mp = malloc (sizeof (mbe_parms));
   state->prev_mp_enhanced = malloc (sizeof (mbe_parms));
+
   mbe_initMbeParms (state->cur_mp, state->prev_mp, state->prev_mp_enhanced);
+#endif
+
   state->p25kid = 0;
 
   state->debug_audio_errors = 0;
@@ -542,9 +549,11 @@ void freeAllocatedMemory(dsd_opts * opts, dsd_state * state)
   UNUSED_VARIABLE(opts);
 
   /* Free allocated memory */
+#ifdef USE_MBE
   free(state->prev_mp_enhanced);
   free(state->prev_mp);
   free(state->cur_mp);
+#endif
   free(state->audio_out_float_buf);
   free(state->audio_out_buf);
   free(state->dibit_buf);
@@ -668,9 +677,9 @@ int main (int argc, char **argv)
 
   UNUSED_VARIABLE(j);
   UNUSED_VARIABLE(RecordingFile);
-
+#ifdef USE_MBE
   mbe_printVersion (versionstr);
-
+#endif
   fprintf(stderr, "*******************************************************************************\n");
   fprintf(stderr, "*******************************************************************************\n");
   fprintf(stderr, "*******************************************************************************\n");

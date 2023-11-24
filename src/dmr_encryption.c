@@ -226,11 +226,11 @@ void ProcessDMREncryption (dsd_opts * opts, dsd_state * state)
     {
       errs  = (int*)&(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].errs1[i]);
       errs2 = (int*)&(TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].errs2[i]);
-
+#ifdef USE_MBE
       mbe_processAmbe2450Dataf (state->audio_out_temp_buf, errs, errs2, state->err_str,
                                 TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i],
                                 state->cur_mp, state->prev_mp, state->prev_mp_enhanced, opts->uvquality);
-
+#endif
       if (opts->mbe_out_f != NULL)
       {
         saveAmbe2450Data (opts, state, TSVoiceSupFrame->TimeSlotAmbeVoiceFrame[Frame].AmbeBit[i]);

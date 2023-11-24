@@ -1,5 +1,5 @@
-project(dsd)
 cmake_minimum_required(VERSION 3.1.0)
+project(dsd)
 
 # Select proper building flag
 # DEBUG or RELEASE
@@ -13,8 +13,8 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 include(git_revision)
 git_describe(GIT_TAG)
 
-find_package(LibSndFile REQUIRED)
-find_package(MBE REQUIRED)
+find_package(LIBSNDFILE REQUIRED)
+find_package(MBE)
 find_package(ITPP REQUIRED)
 find_package(LibPortAudio)
 
@@ -30,11 +30,16 @@ list(APPEND SRCS "${CMAKE_CURRENT_BINARY_DIR}/git_ver.c")
 INCLUDE_DIRECTORIES(
     "${PROJECT_SOURCE_DIR}/include"
     "${LIBSNDFILE_INCLUDE_DIR}"
-    "${MBE_INCLUDE_DIR}"
     "${ITPP_INCLUDE_DIR}"
 )
 
-SET(LIBS ${LIBS} ${MBE_LIBRARY} ${LIBSNDFILE_LIBRARY} ${ITPP_LIBRARY} ${THREAD_LIBRARY})
+SET(LIBS ${LIBS} ${LIBSNDFILE_LIBRARY} ${ITPP_LIBRARY} ${THREAD_LIBRARY})
+
+if(MBE_FOUND)
+    include_directories(MBE_INCLUDE_DIR)
+    list(APPEND LIBS ${MBE_LIBRARY})
+    add_definitions(-DUSE_MBE)
+endif(MBE_FOUND)
 
 if(PORTAUDIO_FOUND)
 SET(INCLUDE_DIRECTORIES ${INCLUDE_DIRECTORIES} "${PORTAUDIO_INCLUDE_DIRS}")

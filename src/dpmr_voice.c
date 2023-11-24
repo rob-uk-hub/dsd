@@ -599,6 +599,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
    * is a voice frame */
   if(VoiceFrameFlag)
   {
+#ifdef USE_MBE
     /* There is 4 AMBE voice sample per voice frame (= 8 per superframe) */
     for(i = 0; i < (NB_OF_DPMR_VOICE_FRAME_TO_DECODE * 4); i++)
     {
@@ -612,6 +613,7 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
       /* Apply ECC 2 to the AMBE frames and get the 49 bit of the voice sample */
       state->dPMRVoiceFS2Frame.errs2[i] += (unsigned int)mbe_eccAmbe3600x2450Data(ambe_fr[i], (char *)state->dPMRVoiceFS2Frame.AmbeBit[i]);
     }
+#endif
   } /* End if(VoiceFrameFlag && !AttachedDataFlag) */
 
   /* Check if the voice frame to play is encrypted */
@@ -663,11 +665,11 @@ void processdPMRvoice (dsd_opts * opts, dsd_state * state)
 
       errs  = (uint32_t*)&(state->dPMRVoiceFS2Frame.errs1[i]);
       errs2 = (uint32_t*)&(state->dPMRVoiceFS2Frame.errs2[i]);
-
+#ifdef USE_MBE
       mbe_processAmbe2450Dataf (state->audio_out_temp_buf, (int *)errs, (int *)errs2, state->err_str,
                                 (char *)state->dPMRVoiceFS2Frame.AmbeBit[i],
                                 state->cur_mp, state->prev_mp, state->prev_mp_enhanced, opts->uvquality);
-
+#endif
       if (opts->mbe_out_f != NULL)
       {
         saveAmbe2450Data (opts, state, (char *)state->dPMRVoiceFS2Frame.AmbeBit[i]);

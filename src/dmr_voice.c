@@ -748,10 +748,11 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
 
       /* At this step we are ready to decode the next valid SYNC */
     }
-
+#ifdef USE_MBE
     /* Extract the 49 bits AMBE of the voice frame */
     if(state->currentslot == 0)
     {
+
       /* 3 x 49 bit of AMBE sample per voice frame => Slot 1buffer  here */
       for(i = 0; i < 3; i++)
       {
@@ -774,6 +775,7 @@ void processDMRvoice (dsd_opts * opts, dsd_state * state)
                                                                                             &(state->TS2SuperFrame.TimeSlotAmbeVoiceFrame[j].AmbeBit[i][0]));
       }
     }
+#endif
   }  /* End for(j = 0; j < 6; j++) */
 
   if(opts->errorbars == 1)

@@ -45,7 +45,11 @@ extern "C" {
 #include <sys/soundcard.h>
 #endif
 #include <math.h>
+
+#ifdef USE_MBE
 #include <mbelib.h>
+#endif
+
 #include <sndfile.h>
 #include <stdbool.h>
 
@@ -549,9 +553,13 @@ typedef struct
   char keyid[17];
   int currentslot; /* 0 = Slot 1 ; 1 = Slot 2 */
   int directmode;
+
+#ifdef USE_MBE
   mbe_parms *cur_mp;
   mbe_parms *prev_mp;
   mbe_parms *prev_mp_enhanced;
+#endif
+
   int p25kid;
 
   unsigned int debug_audio_errors;

@@ -23,7 +23,7 @@ static void DecipherData(char * Input, char * KeyStream, char * Output, int NbDa
 void
 playMbeFiles (dsd_opts * opts, dsd_state * state, int argc, char **argv)
 {
-
+#ifdef USE_MBE
   int i;
   char imbe_d[88];
   char ambe_d[49];
@@ -32,13 +32,16 @@ playMbeFiles (dsd_opts * opts, dsd_state * state, int argc, char **argv)
     {
       sprintf(opts->mbe_in_file, "%s", argv[i]);
       openMbeInFile (opts, state);
+#ifdef USE_MBE
       mbe_initMbeParms (state->cur_mp, state->prev_mp, state->prev_mp_enhanced);
+#endif
       fprintf(stderr, "playing %s\n", opts->mbe_in_file);
       while (feof (opts->mbe_in_f) == 0)
         {
           if (state->mbe_file_type == 0)
             {
               readImbe4400Data (opts, state, imbe_d);
+
               mbe_processImbe4400Dataf (state->audio_out_temp_buf, &state->errs, &state->errs2, state->err_str, imbe_d, state->cur_mp, state->prev_mp, state->prev_mp_enhanced, opts->uvquality);
               processAudio (opts, state);
               if (opts->wav_out_f != NULL)
@@ -54,7 +57,9 @@ playMbeFiles (dsd_opts * opts, dsd_state * state, int argc, char **argv)
           else if (state->mbe_file_type == 1)
             {
               readAmbe2450Data (opts, state, ambe_d);
+#ifdef USE_MBE
               mbe_processAmbe2450Dataf (state->audio_out_temp_buf, &state->errs, &state->errs2, state->err_str, ambe_d, state->cur_mp, state->prev_mp, state->prev_mp_enhanced, opts->uvquality);
+#endif
               processAudio (opts, state);
               if (opts->wav_out_f != NULL)
                 {
@@ -71,6 +76,7 @@ playMbeFiles (dsd_opts * opts, dsd_state * state, int argc, char **argv)
             }
         }
     }
+#endif
 }
 
 void
@@ -83,7 +89,7 @@ processMbeFrame (dsd_opts * opts, dsd_state * state, char imbe_fr[8][23], char a
 #ifdef AMBE_PACKET_OUT
   char ambe_d_str[50];
 #endif
-
+#ifdef USE_MBE
   for (i = 0; i < 88; i++)
     {
       imbe_d[i] = 0;
@@ -152,6 +158,7 @@ processMbeFrame (dsd_opts * opts, dsd_state * state, char imbe_fr[8][23], char a
     {
       playSynthesizedVoice (opts, state);
     }
+#endif
 }
 
 
@@ -169,7 +176,7 @@ void processMbeFrameEncrypted (dsd_opts * opts, dsd_state * state, char imbe_fr[
     {
       imbe_d[i] = 0;
     }
-
+#ifdef USE_MBE
   if ((state->synctype == 0) || (state->synctype == 1))
     {
       //  0 +P25p1
@@ -223,6 +230,7 @@ void processMbeFrameEncrypted (dsd_opts * opts, dsd_state * state, char imbe_fr[
 
       state->errs = 0;
       state->errs2 = 0;
+#ifdef USE_MBE
       state->errs = mbe_eccAmbe3600x2450C0 (ambe_fr);
       mbe_demodulateAmbe3600x2450Data (ambe_fr);
       state->errs2 = state->errs;
@@ -233,6 +241,7 @@ void processMbeFrameEncrypted (dsd_opts * opts, dsd_state * state, char imbe_fr[
       memcpy(state->ambe_deciphered, ambe_d, sizeof(state->ambe_deciphered));
 
       mbe_processAmbe2450Dataf (state->audio_out_temp_buf, &state->errs, &state->errs2, state->err_str, ambe_d, state->cur_mp, state->prev_mp, state->prev_mp_enhanced, opts->uvquality);
+#endif
 
 #ifdef AMBE_PACKET_OUT
       for(i=0; i<49; i++) {
@@ -249,7 +258,7 @@ void processMbeFrameEncrypted (dsd_opts * opts, dsd_state * state, char imbe_fr[
           saveAmbe2450Data (opts, state, ambe_d);
         }
     }
-
+#endif
   if (opts->errorbars == 1)
     {
       fprintf(stderr, "%s", state->err_str);

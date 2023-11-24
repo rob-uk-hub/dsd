@@ -145,7 +145,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
     processNXDNVoice (opts, state);
     return;
   }
-  else if((state->synctype == 28))  // +NXDN - Frame Sync Word only
+  else if(state->synctype == 28)  // +NXDN - Frame Sync Word only
   {
     state->rf_mod = GFSK_MODE;
     state->nac = 0;
@@ -165,7 +165,7 @@ void processFrame (dsd_opts * opts, dsd_state * state)
     ProcessNXDNFrame (opts, state, 0);
     return;
   }
-  else if((state->synctype == 29))  // -NXDN - Frame Sync Word only
+  else if(state->synctype == 29)  // -NXDN - Frame Sync Word only
   {
     state->rf_mod = GFSK_MODE;
     state->nac = 0;
@@ -473,7 +473,9 @@ void processFrame (dsd_opts * opts, dsd_state * state)
           closeMbeOutFile (opts, state);
           openMbeOutFile (opts, state);
         }
+#ifdef USE_MBE
       mbe_initMbeParms (state->cur_mp, state->prev_mp, state->prev_mp_enhanced);
+#endif
       state->lastp25type = 2;
       sprintf(state->fsubtype, " HDU          ");
       processHDU (opts, state);
@@ -543,7 +545,9 @@ void processFrame (dsd_opts * opts, dsd_state * state)
         {
           closeMbeOutFile (opts, state);
         }
+#ifdef USE_MBE
       mbe_initMbeParms (state->cur_mp, state->prev_mp, state->prev_mp_enhanced);
+#endif
       state->lasttg = 0;
       state->lastsrc = 0;
       state->lastp25type = 0;
@@ -569,7 +573,9 @@ void processFrame (dsd_opts * opts, dsd_state * state)
         {
           closeMbeOutFile (opts, state);
         }
+#ifdef USE_MBE
       mbe_initMbeParms (state->cur_mp, state->prev_mp, state->prev_mp_enhanced);
+#endif
       state->lasttg = 0;
       state->lastsrc = 0;
       state->lastp25type = 0;
