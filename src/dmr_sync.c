@@ -16,7 +16,7 @@
  */
 
 #include "dsd.h"
-
+#include "decode_dmr_half_rate.h"
 //#define PRINT_PI_HEADER_BYTES
 //#define PRINT_VOICE_LC_HEADER_BYTES
 //#define PRINT_TERMINAISON_LC_BYTES
@@ -517,7 +517,7 @@ void ProcessDmrTerminaisonLC(dsd_opts * opts, dsd_state * state, uint8_t info[19
   /* Reset the Capacity+ flag */
   state->CapacityPlusFlag = 0;
 
-  if((IrrecoverableErrors == 0))// && CRCCorrect)
+  if(IrrecoverableErrors == 0)// && CRCCorrect)
   {
     /* CRC is correct so consider the Full LC data as correct/valid */
     TSVoiceSupFrame->FullLC.DataValidity = 1;
@@ -695,7 +695,7 @@ void ProcessVoiceBurstSync(dsd_opts * opts, dsd_state * state)
 //  TSVoiceSupFrame->FullLC.SourceAddress = (unsigned int)ConvertBitIntoBytes(&LC_DataBit[48], 24);
 
   /* Check the CRC values */
-  if((IrrecoverableErrors == 0))// && CRCCorrect)
+  if(IrrecoverableErrors == 0)// && CRCCorrect)
   {
     /* Data ara correct */
     //fprintf(stderr, "\nLink Control (LC) Data CRCs are correct !!! Number of error = %u\n", NbOfError);
@@ -1195,6 +1195,23 @@ void ProcessDmrRate12Data(dsd_opts * opts, dsd_state * state, uint8_t info[196],
   fprintf(stderr, "[Frame %d/%d]",
           TSVoiceSupFrame->Data.Rate12NbOfReceivedBlock,
           TSVoiceSupFrame->Data.BlocksToFollow);
+
+  
+  if((IrrecoverableErrors == 0) && CRCCorrect
+    && TSVoiceSupFrame->Data.Rate12NbOfReceivedBlock == TSVoiceSupFrame->Data.BlocksToFollow) {
+
+    // I assume this it moto GPS data? - TODO
+    //fprintf(stderr, "GPSLatitude: %d\n", TSVoiceSupFrame->FullLC.GPSLatitude);
+
+    int l = TSVoiceSupFrame->Data.BlocksToFollow * 6;
+    
+    parse_dmr_half_rate(
+      opts,
+      TSVoiceSupFrame->Data.SourceLogicalLinkID,
+      TSVoiceSupFrame->Data.DestinationLogicalLinkID,
+      TSVoiceSupFrame->Data.GroupDataCall == 1,
+      &TSVoiceSupFrame->Data.Rate12DataWordBigEndian[0], l);
+  }
 
 #ifdef PRINT_RATE_12_DATA_BYTES
   fprintf(stderr, "\n");

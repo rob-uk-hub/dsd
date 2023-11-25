@@ -28,7 +28,7 @@
 #include "git_ver.h"
 #include "p25p1_heuristics.h"
 #include "pa_devs.h"
-
+#include "mqtt.h"
 
 int comp (const void *a, const void *b)
 {
@@ -381,6 +381,15 @@ void usage(void)
   fprintf(stderr, "  -w <file>     Output synthesized speech to a .wav file\n");
   fprintf(stderr, "  -a            Display port audio devices\n");
   fprintf(stderr, "\n");
+#ifdef USE_MOSQUITTO
+  fprintf(stderr, "Connection options:\n");
+  fprintf(stderr, "  -cb<address>     MQTT broker name/ip address\n");
+  fprintf(stderr, "  -cP<port number> MQTT broker port number\n");
+  fprintf(stderr, "  -cu<username>    MQTT broker username\n");
+  fprintf(stderr, "  -cp<password>    MQTT broker password\n");
+  fprintf(stderr, "  -cs              MQTT secure connection (TLS)\n");
+  fprintf(stderr, "  -cl<topic name>  MQTT location.position topic name\n");
+#endif
   fprintf(stderr, "Scanner control options:\n");
   fprintf(stderr, "  -B <num>      Serial port baud rate (default=115200)\n");
   fprintf(stderr, "  -C <device>   Serial port for scanner control (default=/dev/ttyUSB0)\n");
@@ -660,7 +669,7 @@ int main (int argc, char **argv)
   extern int optind, opterr, optopt;
   dsd_opts opts;
   dsd_state state;
-  char versionstr[25];
+  char mbeversionstr[25];
 
 
   int dmr_specific_keystream_valid  = 0;
@@ -674,17 +683,18 @@ int main (int argc, char **argv)
   int Length;
   int Result;
   FILE * RecordingFile = NULL;
+  char portValue[6];
 
   UNUSED_VARIABLE(j);
   UNUSED_VARIABLE(RecordingFile);
 #ifdef USE_MBE
-  mbe_printVersion (versionstr);
+  mbe_printVersion (mbeversionstr);
 #endif
   fprintf(stderr, "*******************************************************************************\n");
   fprintf(stderr, "*******************************************************************************\n");
   fprintf(stderr, "*******************************************************************************\n");
-  fprintf(stderr, "****  Digital Speech Decoder 1.8.4-dev (build:%s)\n", GIT_TAG);
-  fprintf(stderr, "****  mbelib version %s\n", versionstr);
+  fprintf(stderr, "****  Digital Speech Decoder (with MQTT support) (build:%s)\n", GIT_TAG);
+  fprintf(stderr, "****  mbelib version %s\n", mbeversionstr);
   fprintf(stderr, "*******************************************************************************\n");
   fprintf(stderr, "*******************************************************************************\n");
   fprintf(stderr, "*******************************************************************************\n");
@@ -709,7 +719,7 @@ int main (int argc, char **argv)
   exitflag = 0;
   signal (SIGINT, sigfun);
 
-  while ((c = getopt (argc, argv, "haep:qstv:z:i:o:d:g:nw:B:C:R:f:m:u:x:A:S:M:rlD:N:12")) != -1)
+  while ((c = getopt (argc, argv, "haep:qstv:z:i:o:d:g:nw:B:C:R:f:m:u:x:A:S:M:rlD:N:12c:")) != -1)
   {
     opterr = 0;
     switch (c)
@@ -720,6 +730,51 @@ int main (int argc, char **argv)
       case 'a':
         printPortAudioDevices();
         exit(0);
+      
+      case 'c':
+        // connection options (e.g. MQTT)
+        switch(optarg[0]) {
+          case 'b': 
+            // broker address
+            strncpy(opts.mqtt_broker_address, optarg+1, 255);
+            opts.mqtt_broker_address[255] = '\0';
+            fprintf(stderr, "MQTT broker: %s\n", opts.mqtt_broker_address);
+            break;
+          case 'P':
+            // broker port
+            strncpy(portValue, optarg+1, 5);
+            portValue[5] = '\0';
+            opts.mqtt_broker_port = atoi(portValue);
+            fprintf(stderr, "MQTT broker port: %d\n", opts.mqtt_broker_port);
+            break;
+          case 'u':
+            // broker username
+            strncpy(opts.mqtt_username, optarg+1, 255);
+            opts.mqtt_username[255] = '\0';
+            fprintf(stderr, "MQTT username: %s\n", opts.mqtt_username);
+            break;
+          case 'p':
+            // broker password
+            strncpy(opts.mqtt_password, optarg+1, 255);
+            opts.mqtt_password[255] = '\0';
+            fprintf(stderr, "MQTT password defined.\n");
+            break;
+          case 's':
+            opts.mqtt_secure = true;
+            fprintf(stderr, "MQTT secure (TLS) flag set.\n");
+            break;
+          case 'l':
+            // Position/location topic
+            strncpy(opts.mqtt_position_topic, optarg+1, 255);
+            opts.mqtt_position_topic[255] = '\0';
+            fprintf(stderr, "MQTT position/location topic: %s\n", opts.mqtt_position_topic);
+            break;
+          default:
+            fprintf(stderr, "Unknown connection parameter: c%c\n", optarg[0]);
+            exit(1);
+        }
+
+        break;
       case 'e':
         opts.errorbars = 1;
         opts.datascope = 0;
@@ -1961,6 +2016,11 @@ int main (int argc, char **argv)
     openSerial (&opts, &state);
   }
 
+  int mqtt_result = mqtt_setup(&opts);
+  if(mqtt_result < 0) {
+    fprintf(stderr, "Failed to connect to MQTT\n");
+    exit(1);
+  }
 
 #ifdef USE_PORTAUDIO
   if((strncmp(opts.audio_in_dev, "pa:", 3) == 0)

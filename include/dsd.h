@@ -481,6 +481,17 @@ typedef struct
   int  UseSpecificdPMR49BitsAmbeKeyStreamUsed;
   char UseSpecificdPMRAmbeSuperFrameKeyStream[49 * 16]; /* 49 bits of AMBE voice sample x 16 NXDN frames = 784 bits */
   int  UseSpecificdPMRAmbeSuperFrameKeyStreamUsed;
+
+  char mqtt_broker_address[256];
+  int  mqtt_broker_port;
+  char mqtt_username[256];
+  char mqtt_password[256];
+  bool mqtt_secure;
+  char mqtt_position_topic[256];
+  // TODO - message topic
+  // TODO - Voice start topic
+  // TODO - Voice end topic
+
 } dsd_opts;
 
 typedef struct

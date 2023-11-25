@@ -43,6 +43,18 @@ cmake ..
 make
 ```
 
+## Usage
+
+The following needs improving, but is a starter:
+```
+FREQ=438.6625M
+MQTT_SERVER=127.0.0.1
+MQTT_LOCATION_TOPIC=test/dmr_position
+rtl_fm -f ${FREQ} -M fm -l 0 -g 30 -s 70K -r 48K -E dc - | ./dsd -fr -i - -o /dev/null -cb${MQTT_SERVER} -cl${MQTT_LOCATION_TOPIC}
+```
+
+
+
 ## License
 Copyright (C) 2010 DSD Author
 GPG Key ID: 0x3F1D7FD0 (74EF 430D F7F2 0A48 FCE6  F630 FAA2 635D 3F1D 7FD0)

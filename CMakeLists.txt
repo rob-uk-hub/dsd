@@ -7,7 +7,6 @@ project(dsd)
 # DEBUG version   : Call cmake -DCMAKE_BUILD_TYPE=Debug ..
 # RELEASE version : Call cmake -DCMAKE_BUILD_TYPE=Release ..
 
-
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 
 include(git_revision)
@@ -17,6 +16,7 @@ find_package(LIBSNDFILE REQUIRED)
 find_package(MBE)
 find_package(ITPP REQUIRED)
 find_package(LibPortAudio)
+find_package(Mosquitto)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -46,6 +46,14 @@ SET(INCLUDE_DIRECTORIES ${INCLUDE_DIRECTORIES} "${PORTAUDIO_INCLUDE_DIRS}")
 SET(LIBS ${LIBS} ${PORTAUDIO_LIBRARIES})
 add_definitions(-DUSE_PORTAUDIO)
 endif(PORTAUDIO_FOUND)
+
+if(Mosquitto_FOUND)
+    include_directories(SYSTEM ${Mosquitto_INCLUDE_DIR})
+    list(APPEND LIBS ${Mosquitto_LIBRARIES})
+    add_definitions(-DUSE_MOSQUITTO)
+
+    message(STATUS "MQTT is enabled")
+endif(Mosquitto_FOUND)
 
 ADD_EXECUTABLE(dsd ${SRCS} ${HEADERS})
 TARGET_LINK_LIBRARIES(dsd ${LIBS})
