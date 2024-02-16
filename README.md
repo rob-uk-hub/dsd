@@ -47,6 +47,7 @@ make
 
 The following needs improving, but is a starter:
 ```
+# DH7
 FREQ=438.6625M
 MQTT_SERVER=127.0.0.1
 MQTT_LOCATION_TOPIC=test/dmr_position

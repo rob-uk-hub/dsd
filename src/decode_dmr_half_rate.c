@@ -119,7 +119,9 @@ bool try_read_gps(dsd_opts * opts, int source, int dest, bool isGroupCall, char*
 
     char generated_date_time[25];
     // E.g. 2012-04-23T18:25:43.511Z
-    snprintf(generated_date_time, 25, "20%02d-%02d-%02dT%02d:%02d:%02.3fZ", yy, mm, dd, hour, min, sec);
+    // generated:2024-02-16T17:06:0.000Z
+
+    snprintf(generated_date_time, 25, "20%02d-%02d-%02dT%02d:%02d:%06.3fZ", yy, mm, dd, hour, min, sec);
 
     char received_date_time[25];
     time_t rawtime = time(NULL);
@@ -128,14 +130,14 @@ bool try_read_gps(dsd_opts * opts, int source, int dest, bool isGroupCall, char*
         ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday, ptm->tm_hour,
         ptm->tm_min, ptm->tm_sec);
 
-    char msg[1024];
+    char msg[8192];
     char destinationMessage[50];
     if(isGroupCall) sprintf(destinationMessage, "%d-GROUP", dest);
     else sprintf(destinationMessage, "%d", dest);
     // TODO - desination should be escaped for json
     // Source/dest do not seem to be covered by a checksum - TODO - should they be?
-    snprintf(msg, 1023, "{\"receivedDateTime\": \"%s\", \"generatedDateTime\": \"%s\", \"source\":\"%d\",\"destination\":\"%s\",\"latitude\":%f,\"longitude\":%f,\"knots\":%f,\"degrees\":%f}", 
-        received_date_time, generated_date_time, source, destinationMessage, lat, lon, knots, bearing);
+    snprintf(msg, 8191, "decoder:dsd_dmr\nreceived:%s\ngenerated:%s\nsrc:%d\ndest:%s\nlatitude:%f\nlongitude:%f\nknots:%f\ndegrees:%f\nraw:%s", 
+        received_date_time, generated_date_time, source, destinationMessage, lat, lon, knots, bearing, sentence);
     mqtt_send_position(opts, msg, strlen(msg));
 
     return true;
