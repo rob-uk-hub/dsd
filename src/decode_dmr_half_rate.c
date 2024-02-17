@@ -134,11 +134,14 @@ bool try_read_gps(dsd_opts * opts, int source, int dest, bool isGroupCall, char*
     char destinationMessage[50];
     if(isGroupCall) sprintf(destinationMessage, "%d-GROUP", dest);
     else sprintf(destinationMessage, "%d", dest);
-    // TODO - desination should be escaped for json
+
+    char sourceMessage[20];
+    sprintf(sourceMessage, "%d", source);
+
     // Source/dest do not seem to be covered by a checksum - TODO - should they be?
     snprintf(msg, 8191, "decoder:dsd_dmr\nreceived:%s\ngenerated:%s\nsrc:%d\ndest:%s\nlatitude:%f\nlongitude:%f\nknots:%f\ndegrees:%f\nraw:%s", 
         received_date_time, generated_date_time, source, destinationMessage, lat, lon, knots, bearing, sentence);
-    mqtt_send_position(opts, msg, strlen(msg), source);
+    mqtt_send_position(opts, msg, strlen(msg), sourceMessage);
 
     return true;
 }
