@@ -68,19 +68,19 @@ void mqtt_distroy()
     mosquitto_lib_cleanup();
 }
 
-void mqtt_send(dsd_opts * opts, char* topic, char* payload, int length)
+void mqtt_send(dsd_opts * opts, char* topic, char* payload, int length, bool retain)
 {
     if(opts->mqtt_broker_address[0] == 0)  return;
 
     // TODO - should a unqiue topic be used for each source together with the retain option?
     fprintf(stderr, "\nSending %d bytes to MQTT topic %s...\n", length, topic);
-    int rc = mosquitto_publish(mosq_mqtt, NULL, topic, length, payload, 1, false); 
+    int rc = mosquitto_publish(mosq_mqtt, NULL, topic, length, payload, 1, retain); 
     if(rc == MOSQ_ERR_NO_CONN || rc == MOSQ_ERR_ERRNO)
     {
         mqtt_connect(opts);
 
         fprintf(stderr, "Resending due to a MQTT connection error %d\n", rc);
-        rc = mosquitto_publish(mosq_mqtt, NULL, topic, length, payload, 1, false); 
+        rc = mosquitto_publish(mosq_mqtt, NULL, topic, length, payload, 1, retain); 
     } 
 
     if (rc != MOSQ_ERR_SUCCESS)
@@ -90,13 +90,15 @@ void mqtt_send(dsd_opts * opts, char* topic, char* payload, int length)
     }
 }
 
-void mqtt_send_position(dsd_opts * opts, char * msg, int msg_length) {
+void mqtt_send_position(dsd_opts * opts, char * msg, int msg_length, char* sender) {
     if(opts->mqtt_broker_address[0] == 0)  return;
 
-    char *topic = opts->mqtt_position_topic;
-    if(topic == 0) return;
+    if(opts->mqtt_position_topic[0] == 0) return;
 
-    mqtt_send(opts, topic, msg, msg_length);
+    char topic[1000];
+    snprintf(topic, 1000, "%s/%s", opts->mqtt_position_topic, sender);
+    
+    mqtt_send(opts, topic, msg, msg_length, true);
 }
 
 #else
@@ -106,7 +108,7 @@ int mqtt_setup(dsd_opts * opts)
     return 0;
 }
 
-void mqtt_send_position(dsd_opts * opts, char * msg, int msg_length)
+void mqtt_send_position(dsd_opts * opts, char * msg, int msg_length, char* sender)
 {
 }
 

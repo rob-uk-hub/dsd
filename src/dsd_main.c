@@ -388,7 +388,7 @@ void usage(void)
   fprintf(stderr, "  -cu<username>    MQTT broker username\n");
   fprintf(stderr, "  -cp<password>    MQTT broker password\n");
   fprintf(stderr, "  -cs              MQTT secure connection (TLS)\n");
-  fprintf(stderr, "  -cl<topic name>  MQTT location.position topic name\n");
+  fprintf(stderr, "  -cl<topic name>  MQTT location/position topic name prefix (excluding trailing/)\n");
 #endif
   fprintf(stderr, "Scanner control options:\n");
   fprintf(stderr, "  -B <num>      Serial port baud rate (default=115200)\n");
