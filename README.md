@@ -51,7 +51,8 @@ The following needs improving, but is a starter:
 FREQ=438.6625M
 MQTT_SERVER=127.0.0.1
 MQTT_LOCATION_TOPIC=test/dmr_position
-rtl_fm -f ${FREQ} -M fm -l 0 -g 30 -s 70K -r 48K -E dc - | ./dsd -fr -i - -o /dev/null -cb${MQTT_SERVER} -cl${MQTT_LOCATION_TOPIC}
+MQTT_MESSAGE_TOPIC=test/dmr_message
+rtl_fm -f ${FREQ} -M fm -l 0 -g 30 -s 70K -r 48K -E dc - | ./dsd -fr -i - -o /dev/null -cb${MQTT_SERVER} -cl${MQTT_LOCATION_TOPIC} -cm${MQTT_MESSAGE_TOPIC}
 ```
 
 

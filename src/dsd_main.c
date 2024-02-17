@@ -389,6 +389,7 @@ void usage(void)
   fprintf(stderr, "  -cp<password>    MQTT broker password\n");
   fprintf(stderr, "  -cs              MQTT secure connection (TLS)\n");
   fprintf(stderr, "  -cl<topic name>  MQTT location/position topic name prefix (excluding trailing/)\n");
+  fprintf(stderr, "  -cm<topic name>  MQTT message topic name prefix (excluding trailing/)\n");
 #endif
   fprintf(stderr, "Scanner control options:\n");
   fprintf(stderr, "  -B <num>      Serial port baud rate (default=115200)\n");
@@ -767,8 +768,15 @@ int main (int argc, char **argv)
             // Position/location topic
             strncpy(opts.mqtt_position_topic, optarg+1, 255);
             opts.mqtt_position_topic[255] = '\0';
-            fprintf(stderr, "MQTT position/location topic: %s\n", opts.mqtt_position_topic);
+            fprintf(stderr, "MQTT position/location topic prefix: %s\n", opts.mqtt_position_topic);
             break;
+          case 'm':
+            // message topic
+            strncpy(opts.mqtt_message_topic, optarg+1, 255);
+            opts.mqtt_message_topic[255] = '\0';
+            fprintf(stderr, "MQTT message topic prefix: %s\n", opts.mqtt_message_topic);
+            break;
+          
           default:
             fprintf(stderr, "Unknown connection parameter: c%c\n", optarg[0]);
             exit(1);

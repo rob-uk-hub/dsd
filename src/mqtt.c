@@ -98,7 +98,18 @@ void mqtt_send_position(dsd_opts * opts, char * msg, int msg_length, char* sende
     char topic[1000];
     snprintf(topic, 1000, "%s/%s", opts->mqtt_position_topic, sender);
     
-    mqtt_send(opts, topic, msg, msg_length, true);
+    mqtt_send(opts, topic, msg, msg_length, false);
+}
+
+void mqtt_send_message(dsd_opts * opts, char * msg, int msg_length, char* sender) {
+    if(opts->mqtt_broker_address[0] == 0)  return;
+
+    if(opts->mqtt_message_topic[0] == 0) return;
+
+    char topic[1000];
+    snprintf(topic, 1000, "%s/%s", opts->mqtt_message_topic, sender);
+    
+    mqtt_send(opts, topic, msg, msg_length, false);
 }
 
 #else
@@ -110,6 +121,10 @@ int mqtt_setup(dsd_opts * opts)
 
 void mqtt_send_position(dsd_opts * opts, char * msg, int msg_length, char* sender)
 {
+}
+
+
+void mqtt_send_message(dsd_opts * opts, char * msg, int msg_length, char* sender) {
 }
 
 #endif

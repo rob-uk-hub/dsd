@@ -488,7 +488,7 @@ typedef struct
   char mqtt_password[256];
   bool mqtt_secure;
   char mqtt_position_topic[256];
-  // TODO - message topic
+  char mqtt_message_topic[256];
   // TODO - Voice start topic
   // TODO - Voice end topic
 

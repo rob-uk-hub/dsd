@@ -8,3 +8,4 @@
 
 int mqtt_setup(dsd_opts * opts);
 void mqtt_send_position(dsd_opts * opts, char * msg, int msg_length, char* sender);
+void mqtt_send_message(dsd_opts * opts, char * msg, int msg_length, char* sender);
