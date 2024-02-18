@@ -31,7 +31,7 @@ bool try_parse_message(dsd_opts * opts, char* bytes, int length, int source_id, 
     int message_length = bytes_to_u16(bytes[0], bytes[1]);
     fprintf(stderr, "\nMessage length: %d\n", message_length);
     
-    if(length < message_length + 2+8)
+    if(length < message_length + 8)
     {
         // Skip
         return false;
