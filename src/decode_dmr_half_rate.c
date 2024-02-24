@@ -26,11 +26,22 @@ void escape_string(char* input, char* output) {
     int additional = 0;
     int i=0;
     while(input[i] != 0) {
-        if(input[i] == '"' || input[i] == '\\') {
+        if(input[i] == '"') {
             output[i+additional] = '\\';
             additional++;
+            output[i+additional] = input[i];
         }
-        output[i+additional] = input[i];
+        else if(input[i] == '\n') {
+            output[i+additional] = '\\';
+            additional++;
+            output[i+additional] = 'n';
+        } else if(input[i] == '\r') {
+            output[i+additional] = '\\';
+            additional++;
+            output[i+additional] = 'r';
+        } else {
+            output[i+additional] = input[i];
+        }
         i++;
     }
 
