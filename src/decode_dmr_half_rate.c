@@ -98,7 +98,7 @@ bool try_parse_message(dsd_opts * opts, char* bytes, int length, int source_id, 
     escape_string(message_content, msg_message_content);
 
     fprintf(stderr, "Creating message");
-    snprintf(msg, 8191, "{\"source\":\"%d\",\"destination\":\"%d\",\"path\":\"dsd_dmr\",\"data\":\"%s\",\"received\":\"%s\",\"channel\":\"is_group\":%d,\"message\":\"%s\"}", 
+    snprintf(msg, 8191, "{\"source\":\"%d\",\"destination\":\"%d\",\"path\":\"dsd_dmr\",\"data\":\"%s\",\"received\":\"%s\",\"channel\":\"is_group:%d\",\"message\":\"%s\"}", 
         source_id, destination_id, msg_message_content,received_date_time, destination_is_group, msg_message_content);
 
     fprintf(stderr, "Sending: %s", msg);
