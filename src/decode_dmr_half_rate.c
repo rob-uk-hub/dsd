@@ -20,6 +20,23 @@ int indexOf(char* string, char search, int start) {
 
 #define bytes_to_u16(MSB,LSB) (((unsigned int) ((unsigned char) MSB)) & 255)<<8 | (((unsigned char) LSB)&255) 
 
+void escape_string(char* input, char* output) {
+    
+    // TODO - this could overflow!!
+    int additional = 0;
+    int i=0;
+    while(input[i] != 0) {
+        if(input[i] == '"' || input[i] == '\\') {
+            output[i+additional] = '\\';
+            additional++;
+        }
+        output[i+additional] = input[i];
+        i++;
+    }
+
+    output[i+additional] = 0;
+}
+
 bool try_parse_message(dsd_opts * opts, char* bytes, int length, int source_id, int destination_id, bool destination_is_group) 
 {
     // Message length => 2 bytes
@@ -61,8 +78,17 @@ bool try_parse_message(dsd_opts * opts, char* bytes, int length, int source_id, 
 
     char msg[8192];
     // TODO - escaping??
-    snprintf(msg, 8191, "decoder:dsd_dmr\nreceived:%s\nsrc:%d\ndest:%d\ndest_is_group:%d\nmessage:%s\n", 
-        received_date_time, source_id, destination_id, destination_is_group, message_content);
+    //snprintf(msg, 8191, "decoder:dsd_dmr\nreceived:%s\nsrc:%d\ndest:%d\ndest_is_group:%d\nmessage:%s\n", 
+    //    received_date_time, source_id, destination_id, destination_is_group, message_content);
+
+    fprintf(stderr, "Escaping message");
+
+    char msg_message_content[length*2];
+    escape_string(message_content, msg_message_content);
+
+    fprintf(stderr, "Creating message");
+    snprintf(msg, 8191, "{\"source\":\"%d\",\"destination\":\"%d\",\"path\":\"dsd_dmr\",\"data\":\"%s\",\"received\":\"%s\",\"channel\":\"is_group\":%d,\"message\":\"%s\"}", 
+        source_id, destination_id, msg_message_content,received_date_time, destination_is_group, msg_message_content);
 
     fprintf(stderr, "Sending: %s", msg);
 
@@ -235,9 +261,13 @@ bool try_read_gps(dsd_opts * opts, int source, int dest, bool isGroupCall, char*
     char sourceMessage[20];
     sprintf(sourceMessage, "%d", source);
 
-    // Source/dest do not seem to be covered by a checksum - TODO - should they be?
-    snprintf(msg, 8191, "decoder:dsd_dmr\nreceived:%s\ngenerated:%s\nsrc:%d\ndest:%d\ndest_is_group:%d\nlatitude:%f\nlongitude:%f\nknots:%f\ndegrees:%f\nraw:%s", 
-        received_date_time, generated_date_time, source, dest, isGroupCall, lat, lon, knots, bearing, sentence);
+    char msg_sentence[length*2];
+    escape_string(sentence, msg_sentence);
+    snprintf(msg, 8191, "{\"source\":\"%d\",\"destination\":\"%d\",\"path\":\"dsd_dmr\",\"data\":\"%s\",\"received\":\"%s\",\"generated\":\"%s\",\"channel\":\"is_group:%d\",\"latitude\":%f,\"longitude\":%f,\"knots\":%f,\"degrees\":%f}", 
+        source, dest,msg_sentence, received_date_time, generated_date_time, isGroupCall, lat, lon, knots, bearing);
+    
+    //snprintf(msg, 8191, "decoder:dsd_dmr\nreceived:%s\ngenerated:%s\nsrc:%d\ndest:%d\ndest_is_group:%d\nlatitude:%f\nlongitude:%f\nknots:%f\ndegrees:%f\nraw:%s", 
+    //    received_date_time, generated_date_time, source, dest, isGroupCall, lat, lon, knots, bearing, sentence);
     mqtt_send_position(opts, msg, strlen(msg), sourceMessage);
 
     return true;
