@@ -159,8 +159,18 @@ bool try_parse_ip_data(dsd_opts * opts, int source, int dest, bool isGroupCall, 
 bool try_read_gps(dsd_opts * opts, int source, int dest, bool isGroupCall, char* bytes, int length) {
     if (length < 12) return false;
 
-    if (!(bytes[5] == 0x27 && bytes[6] == 0x7E && bytes[7] == 0x27 && bytes[8] == 0x7E)) return false;
+    
+    // https://www.etsi.org/deliver/etsi_ts/102300_102399/10236103/01.02.01_60/ts_10236103v010201p.pdf p34
+    // Bytes 0 and 1 IP identification
+    // Byte 2 SAID and DAID
+    // Byte 3 Op1 and SPID
+    // Byte 4 Op2 and DPID
 
+    // Bytes 5 and 6 Optional extended header 1
+    // Bytes 7 and 8 Optional extended header 2
+    if (!(bytes[5] == 0x27 && bytes[6] == 0x7E && bytes[7] == 0x27 && bytes[8] == 0x7E)) return false;
+    
+    // Bytes 9, 10 and 11 Data
     char sentence[length];
     sprintf(sentence, "%s", bytes + 9); 
     
@@ -183,7 +193,10 @@ bool try_read_gps(dsd_opts * opts, int source, int dest, bool isGroupCall, char*
     sprintf(actualChecksum, "%02X", xor);
     snprintf(expectedChecksum, 3, "%s", sentence+end+1);
     bool checksumOk = strncmp(actualChecksum, expectedChecksum, 2) == 0;
-    fprintf(stderr, "checksum exp: %s, act: %s, ok=%d", expectedChecksum, actualChecksum, checksumOk);
+    if(!checksumOk) {
+        fprintf(stderr, "GPS sentence checksum exp: %s, act: %s, ok=%d", expectedChecksum, actualChecksum, checksumOk);
+        return false;
+    }
 
     int startDate = indexOf(sentence, ',', start);
     if(startDate <0) return false;
